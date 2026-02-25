@@ -12,6 +12,9 @@
       <li [class.active]="section === 'view-budgets'" (click)="setSection('view-budgets')">
         📊 View Budgets
       </li>
+      <li [class.active]="section === 'expense-approvals'" (click)="setSection('expense-approvals')">
+        ✅ Expense Approvals
+      </li>
       <li [class.active]="section === 'notifications'" (click)="setSection('notifications')">
         🔔 Notifications
       </li>
@@ -25,10 +28,22 @@
   <div class="main">
 
     <header class="navbar">
-      <h3>Manager Dashboard</h3>
-      <div class="navbar-meta">
-        <span>Total Budgets: {{ budgets.length }}</span>
-        <span>Pending Expenses: {{ pendingExpensesCount }}</span>
+      <div class="navbar-left">
+        <div class="navbar-title-group">
+          <h3>Manager Dashboard</h3>
+          <p class="navbar-subtitle">Manage budgets and expenses for your department</p>
+        </div>
+        <div class="navbar-meta">
+          <span>Total Budgets: {{ budgets.length }}</span>
+          <span>Pending Expenses: {{ pendingExpensesCount }}</span>
+        </div>
+      </div>
+
+      <div class="navbar-right">
+        <div class="user-pill">
+          <div class="user-name">{{ displayName }}</div>
+          <div class="user-role">Manager</div>
+        </div>
       </div>
     </header>
 
@@ -76,99 +91,118 @@
         </form>
       </section>
 
-      <!-- View Budgets + Expense Approvals -->
-      <section *ngIf="section === 'view-budgets'" class="two-column">
+      <!-- View Budgets -->
+      <section *ngIf="section === 'view-budgets'" class="card">
+        <div class="card-header">
+          <h4>Budgets</h4>
+        </div>
 
-        <!-- Budgets Table -->
-        <div class="card">
-          <div class="card-header">
-            <h4>Budgets</h4>
-          </div>
+        <div *ngIf="isLoadingBudgets">Loading budgets...</div>
 
-          <div *ngIf="isLoadingBudgets">Loading budgets...</div>
+        <table *ngIf="!isLoadingBudgets && budgets.length" class="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Amount</th>
+              <th>Department</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let b of budgets">
+              <td>{{ b.title }}</td>
+              <td>{{ b.amountAllocated | currency }}</td>
+              <td>{{ b.departmentId }}</td>
+              <td class="actions">
+                <button type="button" class="link-btn" (click)="openEditModal(b)">View / Update</button>
+                <button type="button" class="danger-btn" (click)="deleteBudget(b.budgetId)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-          <table *ngIf="!isLoadingBudgets && budgets.length" class="table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Amount</th>
-                <th>Department</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let b of budgets">
-                <td>{{ b.title }}</td>
-                <td>{{ b.amountAllocated | currency }}</td>
-                <td>{{ b.departmentId }}</td>
-                <td class="actions">
-                  <button type="button" class="link-btn" (click)="openEditModal(b)">View / Update</button>
-                  <button type="button" class="danger-btn" (click)="deleteBudget(b.budgetId)">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div *ngIf="!isLoadingBudgets && !budgets.length" class="empty-state">
+          No budgets created yet.
+        </div>
+      </section>
 
-          <div *ngIf="!isLoadingBudgets && !budgets.length" class="empty-state">
-            No budgets created yet.
+      <!-- Expense Approvals (separate navbar item) -->
+      <section *ngIf="section === 'expense-approvals'" class="card">
+        <div class="card-header">
+          <h4>Expense Approvals</h4>
+          <div class="approval-nav">
+            <button
+              class="chip"
+              type="button"
+              [ngClass]="{ 'active': approvalFilter === 'Pending' }"
+              (click)="setApprovalFilter('Pending')">
+              Pending
+            </button>
+            <button
+              class="chip"
+              type="button"
+              [ngClass]="{ 'active': approvalFilter === 'Approved' }"
+              (click)="setApprovalFilter('Approved')">
+              Approved
+            </button>
+            <button
+              class="chip"
+              type="button"
+              [ngClass]="{ 'active': approvalFilter === 'Rejected' }"
+              (click)="setApprovalFilter('Rejected')">
+              Rejected
+            </button>
           </div>
         </div>
 
-        <!-- Expense Approval Section -->
-        <div class="card">
-          <div class="card-header">
-            <h4>Expense Approvals</h4>
-          </div>
+        <div *ngIf="isLoadingExpenses">Loading expenses...</div>
 
-          <div *ngIf="isLoadingExpenses">Loading expenses...</div>
+        <table *ngIf="!isLoadingExpenses && filteredExpenses.length" class="table">
+          <thead>
+            <tr>
+              <th>Expense Title</th>
+              <th>Amount</th>
+              <th>Employee</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let e of filteredExpenses">
+              <td>{{ e.title }}</td>
+              <td>{{ e.amount | currency }}</td>
+              <td>{{ e.employeeName || '-' }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'badge-pending': e.status === 'Pending',
+                  'badge-approved': e.status === 'Approved',
+                  'badge-rejected': e.status === 'Rejected'
+                }">
+                  {{ e.status }}
+                </span>
+              </td>
+              <td class="actions">
+                <button
+                  type="button"
+                  class="primary-btn"
+                  (click)="approveExpense(e)"
+                  [disabled]="e.status === 'Approved' || !canManageExpense(e)">
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  class="danger-outline-btn"
+                  (click)="rejectExpense(e)"
+                  [disabled]="e.status === 'Rejected' || !canManageExpense(e)">
+                  Reject
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-          <table *ngIf="!isLoadingExpenses && expenses.length" class="table">
-            <thead>
-              <tr>
-                <th>Expense Title</th>
-                <th>Amount</th>
-                <th>Employee</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let e of expenses">
-                <td>{{ e.title }}</td>
-                <td>{{ e.amount | currency }}</td>
-                <td>{{ e.employeeName || '-' }}</td>
-                <td>
-                  <span class="badge" [ngClass]="{
-                    'badge-pending': e.status === 'Pending',
-                    'badge-approved': e.status === 'Approved',
-                    'badge-rejected': e.status === 'Rejected'
-                  }">
-                    {{ e.status }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <button
-                    type="button"
-                    class="primary-btn"
-                    (click)="approveExpense(e)"
-                    [disabled]="e.status === 'Approved'">
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    class="danger-outline-btn"
-                    (click)="rejectExpense(e)"
-                    [disabled]="e.status === 'Rejected'">
-                    Reject
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div *ngIf="!isLoadingExpenses && !expenses.length" class="empty-state">
-            No expenses submitted yet.
-          </div>
+        <div *ngIf="!isLoadingExpenses && !filteredExpenses.length" class="empty-state">
+          No expenses submitted yet.
         </div>
       </section>
 

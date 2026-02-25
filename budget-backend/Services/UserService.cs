@@ -1,4 +1,4 @@
-﻿
+
 using InternalBudgetTracker.Data;
 using InternalBudgetTracker.DTOs;
 using InternalBudgetTracker.Enum;
@@ -116,9 +116,9 @@ public class UserService
         string hashPassword =
             _helperService.GenerateHashPassword(dto.Password);
 
-    var user = _context.Users.FirstOrDefault(
-        u => u.Email.ToLower() == dto.Email.ToLower() && u.Password == hashPassword
-    );
+        var user = _context.Users.FirstOrDefault(
+            u => u.Email.ToLower() == dto.Email.ToLower() && u.Password == hashPassword
+        );
 
         if (user == null)
             throw new Exception("Invalid username or password");
@@ -126,19 +126,40 @@ public class UserService
         // if (!user.IsVerified)
         //     throw new Exception("Please verify your email first");
 
-    var token = _helperService.GenerateToken(
-        user.UserId,
-        user.Email,
-        user.Role.ToString()
-        
-    );
-        
-         return new Dictionary<string, string>
-         {
-             {"token",token.ToString() },
-             {"role",user.Role.ToString()}
+        var token = _helperService.GenerateToken(
+            user.UserId,
+            user.Email,
+            user.Role.ToString()
+        );
 
-         };
+        // Shape matches Angular LoginResponse: { token, userId, email, role }
+        return new Dictionary<string, string>
+        {
+            { "token", token },
+            { "userId", user.UserId.ToString() },
+            { "email", user.Email },
+            { "role", user.Role.ToString() }
+        };
+    }
+
+    public IEnumerable<Department> GetDepartments()
+    {
+        return _context.Departments.AsNoTracking().ToList();
+    }
+
+    public IEnumerable<object> GetManagers()
+    {
+        return _context.Users
+            .AsNoTracking()
+            .Where(u => u.Role == UserRole.Manager && u.Status == UserStatus.Active)
+            .Select(u => new
+            {
+                userId = u.UserId,
+                name = u.Name,
+                email = u.Email,
+                role = u.Role.ToString()
+            })
+            .ToList();
     }
 }
 

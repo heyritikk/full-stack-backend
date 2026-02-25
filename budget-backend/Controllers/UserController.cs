@@ -1,14 +1,11 @@
-﻿
+
 
 using Microsoft.AspNetCore.Mvc;
 using InternalBudgetTracker.DTOs;
 using InternalBudgetTracker.Services;
-using System.Threading.Tasks;
 
 namespace InternalBudgetTracker.Controllers
 {
-    
-
     [ApiController]
     [Route("api/users")]
     public class UsersController : ControllerBase
@@ -30,12 +27,10 @@ namespace InternalBudgetTracker.Controllers
 
         [HttpGet("verify")]
         public IActionResult Verify([FromQuery] string token)
-        //=> Ok(new { message = _userService.VerifyUser(token) });
         {
             if (string.IsNullOrEmpty(token)) return BadRequest("Token is missing");
-            var result=_userService.VerifyUser(token);
+            var result = _userService.VerifyUser(token);
             return Ok(result);
-                
         }
 
         [HttpPost("login")]
@@ -44,10 +39,23 @@ namespace InternalBudgetTracker.Controllers
             var result = _userService.Login(dto);
             return Ok(result);
         }
-           
 
+        // Used by Angular ApiService.getDepartments()
+        [HttpGet("departments")]
+        public IActionResult GetDepartments()
+        {
+            var result = _userService.GetDepartments();
+            return Ok(result);
+        }
+
+        // Used by Angular ApiService.getManagers()
+        [HttpGet("managers")]
+        public IActionResult GetManagers()
+        {
+            var result = _userService.GetManagers();
+            return Ok(result);
+        }
     }
-
 }
 
 

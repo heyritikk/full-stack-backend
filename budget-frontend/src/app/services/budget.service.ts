@@ -7,6 +7,7 @@ export interface Budget {
   title: string;
   amountAllocated: number;
   departmentId: number;
+  managerId?: string;
 }
 
 @Injectable({
@@ -14,7 +15,8 @@ export interface Budget {
 })
 export class BudgetService {
 
-  baseUrl = 'https://localhost:7268/api';
+  // Backend runs on http://localhost:5078 (see launchSettings)
+  baseUrl = 'http://localhost:5078/api';
 
   constructor(private http: HttpClient) {}
 

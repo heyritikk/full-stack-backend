@@ -24,9 +24,21 @@
   <div class="main">
 
     <header class="navbar">
-      <h3>Employee Dashboard</h3>
-      <div class="navbar-meta">
-        <span>Total Expenses: {{ expenses.length }}</span>
+      <div class="navbar-left">
+        <div class="navbar-title-group">
+          <h3>Employee Dashboard</h3>
+          <p class="navbar-subtitle">Submit and track your expenses</p>
+        </div>
+        <div class="navbar-meta">
+          <span>Total Expenses: {{ expenses.length }}</span>
+        </div>
+      </div>
+
+      <div class="navbar-right">
+        <div class="user-pill">
+          <div class="user-name">{{ displayName }}</div>
+          <div class="user-role">Employee</div>
+        </div>
       </div>
     </header>
 
@@ -34,14 +46,18 @@
 
       <!-- Create Expense -->
       <section *ngIf="section === 'create-expense'" class="card">
-        <h4>Create Expense</h4>
 
         <form [formGroup]="expenseForm" (ngSubmit)="createExpense()" class="form-grid">
           <div class="form-group">
-            <label>Title</label>
-            <input type="text" formControlName="title" placeholder="e.g. Client meeting lunch" />
-            <div class="error" *ngIf="f['title'].invalid && (f['title'].touched || f['title'].dirty)">
-              Title is required (max 100 characters).
+            <label>Manager</label>
+            <select formControlName="managerId">
+              <option value="">Select manager</option>
+              <option *ngFor="let m of managers" [value]="m.userId">
+                {{ m.name }} ({{ m.email }})
+              </option>
+            </select>
+            <div class="error" *ngIf="f['managerId'].invalid && (f['managerId'].touched || f['managerId'].dirty)">
+              Please select a manager.
             </div>
           </div>
 
@@ -54,18 +70,16 @@
           </div>
 
           <div class="form-group">
-            <!-- <label>Budget ID</label>
-            <input type="number" formControlName="budgetId" placeholder="Linked budget ID" />
+            <label>Budget</label>
+            <select formControlName="budgetId">
+              <option value="">Select budget</option>
+              <option *ngFor="let b of budgets" [value]="b.budgetId">
+                {{ b.title }}
+              </option>
+            </select>
             <div class="error" *ngIf="f['budgetId'].invalid && (f['budgetId'].touched || f['budgetId'].dirty)">
-              Budget ID is required.
-            </div> -->
-          <select formControlName="budgetId" >
-            
-          <!-- <option value="">Select Budget</option> -->
-          <option *ngFor="let b of budgets"[value]="b.budgetId">
-            {{b.title}}
-          </option>
-        </select>
+              Please select a budget.
+            </div>
           </div>
 
           <div class="form-group full-width">
@@ -87,21 +101,18 @@
 
         <div *ngIf="isLoadingExpenses">Loading expenses...</div>
 
-        <table *ngIf="!isLoadingExpenses && expenses.length" class="table">
+          <table *ngIf="!isLoadingExpenses && expenses.length" class="table">
           <thead>
             <tr>
               <th>Title</th>
               <th>Amount</th>
-              <th>Budget</th>
               <th>Status</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let e of expenses">
               <td>{{ e.title }}</td>
               <td>{{ e.amount | currency }}</td>
-              <td>{{ e.budgetId }}</td>
               <td>
                 <span class="badge" [ngClass]="{
                   'badge-pending': e.status === 'Pending',
@@ -110,14 +121,6 @@
                 }">
                   {{ e.status }}
                 </span>
-              </td>
-              <td class="actions">
-                <button type="button" class="link-btn" (click)="openEditModal(e)">
-                  Update
-                </button>
-                <button type="button" class="danger-btn" (click)="deleteExpense(e.id)">
-                  Delete
-                </button>
               </td>
             </tr>
           </tbody>

@@ -58,11 +58,13 @@ export class LoginComponent {
       next: (response) => {
         this.authService.setSession(response.token, response.email, response.role, response.userId);
         this.isLoading = false;
-     if(response.role === 'Manager') {
-         console.log("Inside manager dashboard navigation");
+
+        if (response.role === 'Manager') {
           this.router.navigate(['/manager-dashboard']);
-        } else if(response.role === 'Employee') {
+        } else if (response.role === 'Employee') {
           this.router.navigate(['/employee-dashboard']);
+        } else if (response.role === 'Admin') {
+          this.router.navigate(['/admin-dashboard']);
         }
       },
       error: (error) => {

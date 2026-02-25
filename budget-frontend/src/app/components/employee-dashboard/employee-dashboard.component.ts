@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { Expense, ExpenseService } from '../../services/expense.service';
 import { AuthService } from '../../services/auth.service';
 import { BudgetService } from '../../services/budget.service';
+import { ApiService, UserSummary } from '../../services/api.service';
 
 interface NotificationItem {
   message: string;
@@ -17,7 +18,7 @@ interface NotificationItem {
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './employee-dashboard.component.html',
-  styleUrl: './employee-dashboard.component.css'
+  styleUrls: ['./employee-dashboard.component.css']
 })
 export class EmployeeDashboardComponent implements OnInit {
 
@@ -26,7 +27,7 @@ export class EmployeeDashboardComponent implements OnInit {
   expenses: Expense[] = [];
   notifications: NotificationItem[] = [];
   budgets:any[] =[];
-  //managers: any[]=[];
+  managers: UserSummary[] = [];
 
   expenseForm!: FormGroup;
   editExpenseForm!: FormGroup;
@@ -34,27 +35,32 @@ export class EmployeeDashboardComponent implements OnInit {
   showEditModal = false;
   selectedExpense: Expense | null = null;
 
+  loggedInEmail: string | null = null;
+
   constructor(
     private expenseService: ExpenseService,
     private budgetService:BudgetService,
     private authService: AuthService,
     private router: Router,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private apiService: ApiService
   ) {}
 
   ngOnInit(): void {
+    this.loggedInEmail = this.authService.getEmail();
     this.buildForms();
     this.loadExpenses();
     this.loadBudgets();
-    //cd..this.loadManagers();
+    this.loadManagers();
   }
 
   buildForms() {
     this.expenseForm = this.fb.group({
-      title: ['', [Validators.required, Validators.maxLength(100)]],
+      title: ['', [Validators.maxLength(100)]],
       amount: [null, [Validators.required, Validators.min(1)]],
       budgetId: [null, [Validators.required]],
-      description: ['', [Validators.maxLength(250)]]
+      description: ['', [Validators.maxLength(250)]],
+      managerId: [null, [Validators.required]]
     });
 
     this.editExpenseForm = this.fb.group({
@@ -66,6 +72,14 @@ export class EmployeeDashboardComponent implements OnInit {
   }
 
   get f() { return this.expenseForm.controls; }
+
+  get displayName(): string {
+    if (!this.loggedInEmail) {
+      return 'Employee';
+    }
+    const [name] = this.loggedInEmail.split('@');
+    return name || this.loggedInEmail;
+  }
 
   setSection(name: string) {
     this.section = name;
@@ -91,7 +105,10 @@ export class EmployeeDashboardComponent implements OnInit {
       return;
     }
 
-    const payload = this.expenseForm.value;
+    const payload = { ...this.expenseForm.value };
+    if (!payload.title) {
+      payload.title = payload.description || 'Expense';
+    }
 
     this.expenseService.createExpense(payload).subscribe({
       next: () => {
@@ -162,6 +179,17 @@ export class EmployeeDashboardComponent implements OnInit {
         status: e.status as 'Approved' | 'Rejected',
         createdAt: new Date()
       }));
+  }
+
+  loadManagers() {
+    this.apiService.getManagers().subscribe({
+      next: (res) => {
+        this.managers = res || [];
+      },
+      error: () => {
+        this.managers = [];
+      }
+    });
   }
 
    loadBudgets(){

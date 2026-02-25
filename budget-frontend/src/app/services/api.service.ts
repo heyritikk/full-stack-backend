@@ -32,6 +32,13 @@ export interface LoginResponse {
   role: string;
 }
 
+export interface UserSummary {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -58,6 +65,10 @@ export class ApiService {
 
   getDepartments(): Observable<Department[]> {
     return this.http.get<Department[]>(`${this.apiUrl}/users/departments`);
+  }
+
+  getManagers(): Observable<UserSummary[]> {
+    return this.http.get<UserSummary[]>(`${this.apiUrl}/users/managers`);
   }
 
   /**

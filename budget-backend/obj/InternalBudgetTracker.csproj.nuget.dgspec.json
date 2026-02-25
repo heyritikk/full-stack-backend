@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\2467637\\OneDrive - Cognizant\\Desktop\\budgetM\\budget-backend\\InternalBudgetTracker.csproj": {}
+    "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\InternalBudgetTracker.csproj": {}
   },
   "projects": {
-    "C:\\Users\\2467637\\OneDrive - Cognizant\\Desktop\\budgetM\\budget-backend\\InternalBudgetTracker.csproj": {
+    "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\InternalBudgetTracker.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\2467637\\OneDrive - Cognizant\\Desktop\\budgetM\\budget-backend\\InternalBudgetTracker.csproj",
+        "projectUniqueName": "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\InternalBudgetTracker.csproj",
         "projectName": "InternalBudgetTracker",
-        "projectPath": "C:\\Users\\2467637\\OneDrive - Cognizant\\Desktop\\budgetM\\budget-backend\\InternalBudgetTracker.csproj",
-        "packagesPath": "C:\\Users\\2467637\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\2467637\\OneDrive - Cognizant\\Desktop\\budgetM\\budget-backend\\obj\\",
+        "projectPath": "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\InternalBudgetTracker.csproj",
+        "packagesPath": "C:\\Users\\Ritik\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\2467637\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Ritik\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,7 +26,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -103,7 +102,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

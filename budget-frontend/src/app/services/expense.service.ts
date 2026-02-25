@@ -9,6 +9,9 @@ export interface Expense {
   budgetId: number;
   description?: string;
   employeeName?: string;
+  employeeId?: string | number;
+  managerEmail?: string;
+  managerId?: string | number;
   status: 'Pending' | 'Approved' | 'Rejected' | string;
 }
 
@@ -17,7 +20,8 @@ export interface Expense {
 })
 export class ExpenseService {
 
-  private baseUrl = 'https://localhost:7268/api';
+  // Backend runs on http://localhost:5078 (see launchSettings)
+  private baseUrl = 'http://localhost:5078/api';
 
   constructor(private http: HttpClient) { }
 
@@ -48,6 +52,18 @@ export class ExpenseService {
 
   updateExpenseStatus(id: number, status: 'Pending' | 'Approved' | 'Rejected' | string): Observable<any> {
     return this.updateExpense(id, { status });
+  }
+
+  approveOrRejectExpense(
+    id: number,
+    action: 'Approve' | 'Reject',
+    comment: string = ''
+  ): Observable<any> {
+    return this.http.patch(
+      `${this.baseUrl}/expense/approve-reject/${id}`,
+      { action, comment },
+      { headers: this.getAuthHeaders() }
+    );
   }
 
   deleteExpense(id: number): Observable<any> {

@@ -32,6 +32,8 @@ export class ManagerDashboardComponent implements OnInit {
 
   pendingExpensesCount = 0;
 
+  loggedInEmail: string | null = null;
+
   departments = [
     { departmentId: 1, departmentName: 'HR' },
     { departmentId: 2, departmentName: 'Finance' },
@@ -46,6 +48,8 @@ export class ManagerDashboardComponent implements OnInit {
   isLoadingBudgets = false;
   isLoadingExpenses = false;
 
+  approvalFilter: 'Pending' | 'Approved' | 'Rejected' | 'All' = 'Pending';
+
   constructor(
     private budgetService: BudgetService,
     private expenseService: ExpenseService,
@@ -55,6 +59,7 @@ export class ManagerDashboardComponent implements OnInit {
   ){}
 
   ngOnInit(){
+    this.loggedInEmail = this.authService.getEmail();
     this.buildForms();
     this.loadBudgets();
     this.loadExpenses();
@@ -76,12 +81,33 @@ export class ManagerDashboardComponent implements OnInit {
 
   get f() { return this.budgetForm.controls; }
 
+  get displayName(): string {
+    if (!this.loggedInEmail) {
+      return 'Manager';
+    }
+    const [name] = this.loggedInEmail.split('@');
+    return name || this.loggedInEmail;
+  }
+
+  get filteredExpenses(): Expense[] {
+    if (this.approvalFilter === 'All') {
+      return this.expenses;
+    }
+    return this.expenses.filter(e => e.status === this.approvalFilter);
+  }
+
   setSection(name:string){
     this.section = name;
-    if(name === 'view-budgets')
-      {
-        this.loadBudgets();
+    if (name === 'view-budgets') {
+      this.loadBudgets();
     }
+    if (name === 'expense-approvals') {
+      this.loadExpenses();
+    }
+  }
+
+  setApprovalFilter(filter: 'Pending' | 'Approved' | 'Rejected' | 'All') {
+    this.approvalFilter = filter;
   }
 
   loadBudgets(){
@@ -102,7 +128,19 @@ export class ManagerDashboardComponent implements OnInit {
     this.isLoadingExpenses = true;
     this.expenseService.getAllExpenses().subscribe({
       next: (res) => {
-        this.expenses = res;
+        const currentEmail = this.authService.getEmail();
+        const currentUserId = this.authService.getUserId();
+
+        this.expenses = res.filter(e => {
+          if (e.managerId && currentUserId) {
+            return String(e.managerId) === String(currentUserId);
+          }
+          if (e.managerEmail && currentEmail) {
+            return e.managerEmail.toLowerCase() === currentEmail.toLowerCase();
+          }
+          return e.status === 'Pending';
+        });
+
         this.pendingExpensesCount = this.expenses.filter(e => e.status === 'Pending').length;
         this.isLoadingExpenses = false;
       },
@@ -179,10 +217,16 @@ export class ManagerDashboardComponent implements OnInit {
   }
 
   approveExpense(expense: Expense) {
-    this.expenseService.updateExpenseStatus(expense.id, 'Approved').subscribe({
+    if (!this.canManageExpense(expense)) {
+      return;
+    }
+    this.expenseService.approveOrRejectExpense(expense.id, 'Approve').subscribe({
       next: () => {
         this.pushNotification(`Expense "${expense.title}" approved.`, 'expense');
-        this.loadExpenses();
+        this.expenses = this.expenses.map(e =>
+          e.id === expense.id ? { ...e, status: 'Approved' } : e
+        );
+        this.pendingExpensesCount = this.expenses.filter(e => e.status === 'Pending').length;
       },
       error: () => {
         this.pushNotification(`Failed to approve expense "${expense.title}".`, 'expense');
@@ -191,10 +235,16 @@ export class ManagerDashboardComponent implements OnInit {
   }
 
   rejectExpense(expense: Expense) {
-    this.expenseService.updateExpenseStatus(expense.id, 'Rejected').subscribe({
+    if (!this.canManageExpense(expense)) {
+      return;
+    }
+    this.expenseService.approveOrRejectExpense(expense.id, 'Reject').subscribe({
       next: () => {
         this.pushNotification(`Expense "${expense.title}" rejected.`, 'expense');
-        this.loadExpenses();
+        this.expenses = this.expenses.map(e =>
+          e.id === expense.id ? { ...e, status: 'Rejected' } : e
+        );
+        this.pendingExpensesCount = this.expenses.filter(e => e.status === 'Pending').length;
       },
       error: () => {
         this.pushNotification(`Failed to reject expense "${expense.title}".`, 'expense');
@@ -208,6 +258,19 @@ export class ManagerDashboardComponent implements OnInit {
       type,
       createdAt: new Date()
     });
+  }
+
+  canManageExpense(expense: Expense): boolean {
+    const currentEmail = this.authService.getEmail();
+    const currentUserId = this.authService.getUserId();
+
+    if (expense.managerId && currentUserId) {
+      return String(expense.managerId) === String(currentUserId);
+    }
+    if (expense.managerEmail && currentEmail) {
+      return expense.managerEmail.toLowerCase() === currentEmail.toLowerCase();
+    }
+    return false;
   }
 
   logout(){

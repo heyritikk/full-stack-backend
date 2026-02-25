@@ -1,4 +1,4 @@
-﻿using InternalBudgetTracker.Data;
+using InternalBudgetTracker.Data;
 using InternalBudgetTracker.DTOs;
 using InternalBudgetTracker.Enum;
 using InternalBudgetTracker.Models;
@@ -70,7 +70,7 @@ namespace InternalBudgetTracker.Services
             return "Expense created successfully";
         }
 
-        //Service to get expenses
+        //Service to get expenses - shaped for frontend
         public object GetExpenses(int? expenseId)
         {
             var query = _context.Expenses
@@ -78,20 +78,54 @@ namespace InternalBudgetTracker.Services
                 .Include(e => e.Budget)
                 .AsQueryable();
 
-            // GET BY ID
+            // join with approvals + manager for manager filtering/UI
+            var approvals = _context.ExpenseApprovals
+                .Include(a => a.Manager)
+                .AsQueryable();
+
             if (expenseId.HasValue)
             {
-                var expense = query
-                    .FirstOrDefault(e => e.ExpenseId == expenseId.Value);
+                var item = query.FirstOrDefault(e => e.ExpenseId == expenseId.Value);
+                if (item == null) throw new Exception("Expense not found");
 
-                if (expense == null)
-                    throw new Exception("Expense not found");
+                var approval = approvals.FirstOrDefault(a => a.ExpenseId == item.ExpenseId);
 
-                return expense; // single object
+                return new
+                {
+                    id = item.ExpenseId,
+                    title = item.Description,
+                    amount = item.Amount,
+                    budgetId = item.BudgetId,
+                    description = item.Description,
+                    employeeName = item.Employee != null ? item.Employee.Name : null,
+                    status = item.Status.ToString(),
+                    managerId = approval?.ManagerId,
+                    managerEmail = approval?.Manager?.Email
+                };
             }
 
-            // GET ALL
-            return _context.Expenses.ToList();
+            var list = query
+                .Join(
+                    approvals,
+                    e => e.ExpenseId,
+                    a => a.ExpenseId,
+                    (e, a) => new { e, a }
+                )
+                .Select(x => new
+                {
+                    id = x.e.ExpenseId,
+                    title = x.e.Description,
+                    amount = x.e.Amount,
+                    budgetId = x.e.BudgetId,
+                    description = x.e.Description,
+                    employeeName = x.e.Employee != null ? x.e.Employee.Name : null,
+                    status = x.e.Status.ToString(),
+                    managerId = x.a.ManagerId,
+                    managerEmail = x.a.Manager != null ? x.a.Manager.Email : null
+                })
+                .ToList();
+
+            return list;
         }
 
 

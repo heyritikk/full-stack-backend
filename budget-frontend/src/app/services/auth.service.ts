@@ -36,6 +36,10 @@ export class AuthService {
     return this.storage.getItem('email');
   }
 
+  getUserId(): string | null {
+    return this.storage.getItem('userId');
+  }
+
   isLoggedIn(): boolean {
     return !!this.getToken();
   }
