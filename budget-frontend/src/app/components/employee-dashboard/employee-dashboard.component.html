@@ -1,0 +1,194 @@
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2 class="sidebar-title">Employee</h2>
+
+    <ul class="menu">
+      <li [class.active]="section === 'create-expense'" (click)="setSection('create-expense')">
+        ➕ Create Expense
+      </li>
+      <li [class.active]="section === 'view-expenses'" (click)="setSection('view-expenses')">
+        📄 View Expenses
+      </li>
+      <li [class.active]="section === 'notifications'" (click)="setSection('notifications')">
+        🔔 Notifications
+      </li>
+      <li (click)="logout()">
+        🚪 Logout
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main">
+
+    <header class="navbar">
+      <h3>Employee Dashboard</h3>
+      <div class="navbar-meta">
+        <span>Total Expenses: {{ expenses.length }}</span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Create Expense -->
+      <section *ngIf="section === 'create-expense'" class="card">
+        <h4>Create Expense</h4>
+
+        <form [formGroup]="expenseForm" (ngSubmit)="createExpense()" class="form-grid">
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" formControlName="title" placeholder="e.g. Client meeting lunch" />
+            <div class="error" *ngIf="f['title'].invalid && (f['title'].touched || f['title'].dirty)">
+              Title is required (max 100 characters).
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Amount</label>
+            <input type="number" formControlName="amount" placeholder="e.g. 1500" />
+            <div class="error" *ngIf="f['amount'].invalid && (f['amount'].touched || f['amount'].dirty)">
+              Please enter a positive amount.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <!-- <label>Budget ID</label>
+            <input type="number" formControlName="budgetId" placeholder="Linked budget ID" />
+            <div class="error" *ngIf="f['budgetId'].invalid && (f['budgetId'].touched || f['budgetId'].dirty)">
+              Budget ID is required.
+            </div> -->
+          <select formControlName="budgetId" >
+            
+          <!-- <option value="">Select Budget</option> -->
+          <option *ngFor="let b of budgets"[value]="b.budgetId">
+            {{b.title}}
+          </option>
+        </select>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Description</label>
+            <textarea formControlName="description" rows="3" placeholder="Short description of the expense"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn">
+              Submit Expense
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- View Expenses -->
+      <section *ngIf="section === 'view-expenses'" class="card">
+        <h4>My Expenses</h4>
+
+        <div *ngIf="isLoadingExpenses">Loading expenses...</div>
+
+        <table *ngIf="!isLoadingExpenses && expenses.length" class="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Amount</th>
+              <th>Budget</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let e of expenses">
+              <td>{{ e.title }}</td>
+              <td>{{ e.amount | currency }}</td>
+              <td>{{ e.budgetId }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'badge-pending': e.status === 'Pending',
+                  'badge-approved': e.status === 'Approved',
+                  'badge-rejected': e.status === 'Rejected'
+                }">
+                  {{ e.status }}
+                </span>
+              </td>
+              <td class="actions">
+                <button type="button" class="link-btn" (click)="openEditModal(e)">
+                  Update
+                </button>
+                <button type="button" class="danger-btn" (click)="deleteExpense(e.id)">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="!isLoadingExpenses && !expenses.length" class="empty-state">
+          No expenses created yet.
+        </div>
+      </section>
+
+      <!-- Notifications -->
+      <section *ngIf="section === 'notifications'" class="card">
+        <h4>Notifications</h4>
+
+        <div *ngIf="!notifications.length" class="empty-state">
+          No notifications yet. Approved or rejected expenses will appear here.
+        </div>
+
+        <ul *ngIf="notifications.length" class="notification-list">
+          <li *ngFor="let n of notifications">
+            <div class="notification-pill" [ngClass]="{
+              'notif-approved': n.status === 'Approved',
+              'notif-rejected': n.status === 'Rejected'
+            }">
+              <span class="notif-type">{{ n.status }}</span>
+              <span class="notif-message">{{ n.message }}</span>
+              <span class="notif-time">{{ n.createdAt | date:'shortTime' }}</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Edit Expense Modal -->
+  <div class="modal-backdrop" *ngIf="showEditModal">
+    <div class="modal">
+      <h4>Edit Expense</h4>
+
+      <form [formGroup]="editExpenseForm" (ngSubmit)="updateExpense()" class="form-grid">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" formControlName="title" />
+        </div>
+
+        <div class="form-group">
+          <label>Amount</label>
+          <input type="number" formControlName="amount" />
+        </div>
+
+       
+
+        <select formControlName="budgetId">
+          <option value="">Select Budget</option>
+          <option *ngFor="let b of budgets"[value]="b.budgetId">
+            {{b.title}}
+          </option>
+        </select>
+
+        <div class="form-group full-width">
+          <label>Description</label>
+          <textarea formControlName="description" rows="3"></textarea>
+        </div>
+
+        <div class="form-actions modal-actions">
+          <button type="button" class="secondary-btn" (click)="closeEditModal()">Cancel</button>
+          <button type="submit" class="primary-btn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
