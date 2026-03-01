@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\InternalBudgetTracker.csproj": {}
+    "C:\\Users\\Ritik\\full-stack-backend\\budget-backend\\InternalBudgetTracker.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\InternalBudgetTracker.csproj": {
+    "C:\\Users\\Ritik\\full-stack-backend\\budget-backend\\InternalBudgetTracker.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\InternalBudgetTracker.csproj",
+        "projectUniqueName": "C:\\Users\\Ritik\\full-stack-backend\\budget-backend\\InternalBudgetTracker.csproj",
         "projectName": "InternalBudgetTracker",
-        "projectPath": "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\InternalBudgetTracker.csproj",
+        "projectPath": "C:\\Users\\Ritik\\full-stack-backend\\budget-backend\\InternalBudgetTracker.csproj",
         "packagesPath": "C:\\Users\\Ritik\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Ritik\\Desktop\\Finallly\\budgetM\\budget-backend\\obj\\",
+        "outputPath": "C:\\Users\\Ritik\\full-stack-backend\\budget-backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

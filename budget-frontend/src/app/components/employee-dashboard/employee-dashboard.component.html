@@ -107,6 +107,7 @@
               <th>Title</th>
               <th>Amount</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -121,6 +122,10 @@
                 }">
                   {{ e.status }}
                 </span>
+              </td>
+              <td>
+                <button class="action-btn edit-btn" (click)="openEditModal(e)">Update</button>
+                <button class="action-btn delete-btn" (click)="deleteExpense(e.id)">Delete</button>
               </td>
             </tr>
           </tbody>
