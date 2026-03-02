@@ -71,17 +71,37 @@ namespace InternalBudgetTracker.Services
         }
 
         //Service to get expenses - shaped for frontend
-        public object GetExpenses(int? expenseId)
+        public object GetExpenses(int? expenseId, ClaimsPrincipal user)
         {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            var roleClaim = user.FindFirst(ClaimTypes.Role);
+
+            if (userIdClaim == null || roleClaim == null)
+                throw new Exception("Invalid token");
+
+            int currentUserId = int.Parse(userIdClaim.Value);
+            string role = roleClaim.Value;
+
             var query = _context.Expenses
                 .Include(e => e.Employee)
                 .Include(e => e.Budget)
                 .AsQueryable();
 
+            if (role == "Employee")
+            {
+                query = query.Where(e => e.EmployeeId == currentUserId);
+            }
+
             // join with approvals + manager for manager filtering/UI
             var approvals = _context.ExpenseApprovals
                 .Include(a => a.Manager)
                 .AsQueryable();
+
+            if (role == "Manager")
+            {
+                approvals = approvals.Where(a => a.ManagerId == currentUserId);
+                query = query.Where(e => approvals.Any(a => a.ExpenseId == e.ExpenseId));
+            }
 
             if (expenseId.HasValue)
             {

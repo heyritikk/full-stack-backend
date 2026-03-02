@@ -29,7 +29,7 @@ namespace InternalBudgetTracker.Controllers
         [HttpGet]
         public IActionResult GetExpenses([FromQuery] int? expenseId)
         {
-            var result = _expenseService.GetExpenses(expenseId);
+            var result = _expenseService.GetExpenses(expenseId, User);
             return Ok(result);
         }
 
