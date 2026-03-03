@@ -8,206 +8,263 @@ import { BudgetService } from '../../services/budget.service';
 import { ApiService, UserSummary } from '../../services/api.service';
 
 interface NotificationItem {
-  message: string;
-  status: 'Approved' | 'Rejected';
-  createdAt: Date;
+ message: string;
+ status: 'Approved' | 'Rejected';
+ createdAt: Date;
+}
+
+interface EmployeeBudgetItem {
+ budgetId: number;
+ title: string;
+ createdByUserId?: number;
 }
 
 @Component({
-  selector: 'app-employee-dashboard',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './employee-dashboard.component.html',
-  styleUrls: ['./employee-dashboard.component.css']
+ selector: 'app-employee-dashboard',
+ standalone: true,
+ imports: [CommonModule, ReactiveFormsModule],
+ templateUrl: './employee-dashboard.component.html',
+ styleUrls: ['./employee-dashboard.component.css']
 })
 export class EmployeeDashboardComponent implements OnInit {
 
-  section: string = 'create-expense';
+ section: string = 'create-expense';
+ isSidebarOpen = true;
 
-  expenses: Expense[] = [];
-  notifications: NotificationItem[] = [];
-  budgets:any[] =[];
-  managers: UserSummary[] = [];
+ expenses: Expense[] = [];
+ notifications: NotificationItem[] = [];
+ budgets: EmployeeBudgetItem[] = [];
+ managers: UserSummary[] = [];
 
-  expenseForm!: FormGroup;
-  editExpenseForm!: FormGroup;
-  isLoadingExpenses = false;
-  showEditModal = false;
-  selectedExpense: Expense | null = null;
+ expenseForm!: FormGroup;
+ editExpenseForm!: FormGroup;
+ isLoadingExpenses = false;
+ showEditModal = false;
+ selectedExpense: Expense | null = null;
 
-  loggedInEmail: string | null = null;
+ loggedInEmail: string | null = null;
 
-  constructor(
-    private expenseService: ExpenseService,
-    private budgetService:BudgetService,
-    private authService: AuthService,
-    private router: Router,
-    private fb: FormBuilder,
-    private apiService: ApiService
-  ) {}
+ constructor(
+ private expenseService: ExpenseService,
+ private budgetService:BudgetService,
+ private authService: AuthService,
+ private router: Router,
+ private fb: FormBuilder,
+ private apiService: ApiService
+ ) {}
 
-  ngOnInit(): void {
-    this.loggedInEmail = this.authService.getEmail();
-    this.buildForms();
-    this.loadExpenses();
-    this.loadBudgets();
-    this.loadManagers();
-  }
+ ngOnInit(): void {
+ this.loggedInEmail = this.authService.getEmail();
+ this.buildForms();
+ this.setupBudgetManagerBinding();
+ this.loadExpenses();
+ this.loadBudgets();
+ this.loadManagers();
+ }
 
-  buildForms() {
-    this.expenseForm = this.fb.group({
-      title: ['', [Validators.maxLength(100)]],
-      amount: [null, [Validators.required, Validators.min(1)]],
-      budgetId: [null, [Validators.required]],
-      description: ['', [Validators.maxLength(250)]],
-      managerId: [null, [Validators.required]]
-    });
+ buildForms() {
+ this.expenseForm = this.fb.group({
+ title: ['', [Validators.maxLength(100)]],
+ amount: [null, [Validators.required, Validators.min(1)]],
+ budgetId: [null, [Validators.required]],
+ description: ['', [Validators.maxLength(250)]],
+ managerId: [null, [Validators.required]]
+ });
 
-    this.editExpenseForm = this.fb.group({
-      title: ['', [Validators.required, Validators.maxLength(100)]],
-      amount: [null, [Validators.required, Validators.min(1)]],
-      budgetId: [null, [Validators.required]],
-      description: ['', [Validators.maxLength(250)]]
-    });
-  }
+ this.editExpenseForm = this.fb.group({
+ title: ['', [Validators.required, Validators.maxLength(100)]],
+ amount: [null, [Validators.required, Validators.min(1)]],
+ budgetId: [null, [Validators.required]],
+ description: ['', [Validators.maxLength(250)]]
+ });
+ }
 
-  get f() { return this.expenseForm.controls; }
+ get f() { return this.expenseForm.controls; }
 
-  get displayName(): string {
-    if (!this.loggedInEmail) {
-      return 'Employee';
-    }
-    const [name] = this.loggedInEmail.split('@');
-    return name || this.loggedInEmail;
-  }
+ get displayName(): string {
+ if (!this.loggedInEmail) {
+ return 'Employee';
+ }
+ const [name] = this.loggedInEmail.split('@');
+ return name || this.loggedInEmail;
+ }
 
-  setSection(name: string) {
-    this.section = name;
-  }
+ setSection(name: string) {
+ this.section = name;
+ }
 
-  loadExpenses() {
-    this.isLoadingExpenses = true;
-    this.expenseService.getAllExpenses().subscribe({
-      next: (res) => {
-        this.expenses = res;
-        this.isLoadingExpenses = false;
-        this.buildNotificationsFromExpenses();
-      },
-      error: () => {
-        this.isLoadingExpenses = false;
-      }
-    });
-  }
+ toggleSidebar() {
+ this.isSidebarOpen = !this.isSidebarOpen;
+ }
 
-  createExpense() {
-    if (this.expenseForm.invalid) {
-      this.expenseForm.markAllAsTouched();
-      return;
-    }
+ get selectedBudgetCreatorId(): number | null {
+ const selectedBudgetId = this.expenseForm?.get('budgetId')?.value;
+ if (!selectedBudgetId) {
+ return null;
+ }
+ const budget = this.budgets.find(b => Number(b.budgetId) === Number(selectedBudgetId));
+ return budget?.createdByUserId ? Number(budget.createdByUserId) : null;
+ }
 
-    const payload = { ...this.expenseForm.value };
-    if (!payload.title) {
-      payload.title = payload.description || 'Expense';
-    }
+ get filteredManagers(): UserSummary[] {
+ const creatorId = this.selectedBudgetCreatorId;
+ if (!creatorId) {
+ return [];
+ }
+ return this.managers.filter(m => Number(m.userId) === creatorId);
+ }
 
-    this.expenseService.createExpense(payload).subscribe({
-      next: () => {
-        this.loadExpenses();
-        this.expenseForm.reset();
-        this.section = 'view-expenses';
-      },
-      error: () => {
-        // optional: surface error to user
-      }
-    });
-  }
+ loadExpenses() {
+ this.isLoadingExpenses = true;
+ this.expenseService.getAllExpenses().subscribe({
+ next: (res) => {
+ this.expenses = res;
+ this.isLoadingExpenses = false;
+ this.buildNotificationsFromExpenses();
+ },
+ error: () => {
+ this.isLoadingExpenses = false;
+ }
+ });
+ }
 
-  openEditModal(expense: Expense) {
-    this.selectedExpense = expense;
-    this.editExpenseForm.setValue({
-      title: expense.title,
-      amount: expense.amount,
-      budgetId: expense.budgetId,
-      description: expense.description || ''
-    });
-    this.showEditModal = true;
-  }
+ createExpense() {
+ if (this.expenseForm.invalid) {
+ this.expenseForm.markAllAsTouched();
+ return;
+ }
 
-  closeEditModal() {
-    this.showEditModal = false;
-    this.selectedExpense = null;
-  }
+ const payload = { ...this.expenseForm.value };
+ if (!payload.title) {
+ payload.title = payload.description || 'Expense';
+ }
 
-  updateExpense() {
-    if (!this.selectedExpense || this.editExpenseForm.invalid) {
-      this.editExpenseForm.markAllAsTouched();
-      return;
-    }
+ this.expenseService.createExpense(payload).subscribe({
+ next: () => {
+ this.loadExpenses();
+ this.expenseForm.reset();
+ this.section = 'view-expenses';
+ },
+ error: () => {
+ // optional: surface error to user
+ }
+ });
+ }
 
-    const payload = this.editExpenseForm.value;
+ openEditModal(expense: Expense) {
+ this.selectedExpense = expense;
+ this.editExpenseForm.setValue({
+ title: expense.title,
+ amount: expense.amount,
+ budgetId: expense.budgetId,
+ description: expense.description || ''
+ });
+ this.showEditModal = true;
+ }
 
-    this.expenseService.updateExpense(this.selectedExpense.id, payload).subscribe({
-      next: () => {
-        this.loadExpenses();
-        this.closeEditModal();
-      },
-      error: () => {
-        // optional: surface error
-      }
-    });
-  }
+ closeEditModal() {
+ this.showEditModal = false;
+ this.selectedExpense = null;
+ }
 
-  deleteExpense(id: number) {
-    if (!confirm('Are you sure you want to delete this expense?')) {
-      return;
-    }
+ updateExpense() {
+ if (!this.selectedExpense || this.editExpenseForm.invalid) {
+ this.editExpenseForm.markAllAsTouched();
+ return;
+ }
 
-    this.expenseService.deleteExpense(id).subscribe({
-      next: () => {
-        this.loadExpenses();
-      }
-    });
-  }
+ const payload = this.editExpenseForm.value;
 
-  buildNotificationsFromExpenses() {
-    this.notifications = this.expenses
-      .filter(e => e.status === 'Approved' || e.status === 'Rejected')
-      .map(e => ({
-        message: e.status === 'Approved'
-          ? `Your expense "${e.title}" was approved.`
-          : `Your expense "${e.title}" was rejected.`,
-        status: e.status as 'Approved' | 'Rejected',
-        createdAt: new Date()
-      }));
-  }
+ this.expenseService.updateExpense(this.selectedExpense.id, payload).subscribe({
+ next: () => {
+ this.loadExpenses();
+ this.closeEditModal();
+ },
+ error: () => {
+ // optional: surface error
+ }
+ });
+ }
 
-  loadManagers() {
-    this.apiService.getManagers().subscribe({
-      next: (res) => {
-        this.managers = res || [];
-      },
-      error: () => {
-        this.managers = [];
-      }
-    });
-  }
+ deleteExpense(id: number) {
+ if (!confirm('Are you sure you want to delete this expense?')) {
+ return;
+ }
 
-   loadBudgets(){
-    
-    this.budgetService.getAllBudgets().subscribe
-       ((res:any) => {
-        console.log("Full Response",res);
-        this.budgets = res.data;
-        console.log("Budget Array:",this.budgets);
-       
-      });
-      
-  }
+ this.expenseService.deleteExpense(id).subscribe({
+ next: () => {
+ this.loadExpenses();
+ }
+ });
+ }
 
-  
+ buildNotificationsFromExpenses() {
+ this.notifications = this.expenses
+ .filter(e => e.status === 'Approved' || e.status === 'Rejected')
+ .map(e => ({
+ message: e.status === 'Approved'
+ ? `Your expense "${e.title}" was approved.`
+ : `Your expense "${e.title}" was rejected.`,
+ status: e.status as 'Approved' | 'Rejected',
+ createdAt: new Date()
+ }));
+ }
 
-  logout() {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
+ setupBudgetManagerBinding() {
+ this.expenseForm.get('budgetId')?.valueChanges.subscribe((budgetId) => {
+ this.syncManagerWithSelectedBudget(budgetId);
+ });
+ }
+
+ syncManagerWithSelectedBudget(budgetId: number | string | null) {
+ const selected = this.budgets.find(b => Number(b.budgetId) === Number(budgetId));
+ const creatorId = selected?.createdByUserId ? Number(selected.createdByUserId) : null;
+ const managerControl = this.expenseForm.get('managerId');
+
+ if (!managerControl) {
+ return;
+ }
+
+ if (!creatorId) {
+ managerControl.setValue(null, { emitEvent: false });
+ return;
+ }
+
+ if (Number(managerControl.value) !== creatorId) {
+ managerControl.setValue(creatorId, { emitEvent: false });
+ }
+ }
+
+ loadManagers() {
+ this.apiService.getManagers().subscribe({
+ next: (res) => {
+ this.managers = res || [];
+ },
+ error: () => {
+ this.managers = [];
+ }
+ });
+ }
+
+ loadBudgets(){
+ 
+ this.budgetService.getAllBudgets().subscribe
+ ((res:any) => {
+ console.log("Full Response",res);
+ this.budgets = res.data;
+ this.syncManagerWithSelectedBudget(this.expenseForm.get('budgetId')?.value);
+ console.log("Budget Array:",this.budgets);
+ 
+ });
+ 
+ }
+
+ 
+
+ logout() {
+ this.authService.logout();
+ this.router.navigate(['/login']);
+ }
 }
+
+

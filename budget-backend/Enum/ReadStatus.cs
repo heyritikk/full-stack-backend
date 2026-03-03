@@ -1,8 +1,9 @@
 ﻿namespace InternalBudgetTracker.Enum
 {
-    public enum ReadStatus
-    {
-        Unread,
-         Read
-    }
+ public enum ReadStatus
+ {
+ Unread,
+ Read
+ }
 }
+

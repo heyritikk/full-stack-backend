@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 import { LandingComponent } from './components/landing/landing.component';
 import { RegisterComponent } from './components/register/register.component';
 import { LoginComponent } from './components/login/login.component';
@@ -10,21 +10,21 @@ import { AdminDashboardComponent } from './components/admin-dashboard/admin-dash
  
 export const routes: Routes = [
  
-  { path: '', component: LandingComponent },
+ { path: '', component: LandingComponent },
  
-  { path: 'register', component: RegisterComponent },
+ { path: 'register', component: RegisterComponent },
  
-  { path: 'login', component: LoginComponent },
+ { path: 'login', component: LoginComponent },
  
-  { path: 'verify', component: VerifyComponent },
+ { path: 'verify', component: VerifyComponent },
  
-  { path: 'manager-dashboard', component: ManagerDashboardComponent, canActivate:[authGuard], data:{ roles:['Manager'] } },
+ { path: 'manager-dashboard', component: ManagerDashboardComponent, canActivate:[authGuard], data:{ roles:['Manager'] } },
  
-  { path: 'employee-dashboard', component: EmployeeDashboardComponent, canActivate:[authGuard], data:{ roles:['Employee'] } },
+ { path: 'employee-dashboard', component: EmployeeDashboardComponent, canActivate:[authGuard], data:{ roles:['Employee'] } },
 
-  { path: 'admin-dashboard', component: AdminDashboardComponent, canActivate:[authGuard], data:{ roles:['Admin'] } },
+ { path: 'admin-dashboard', component: AdminDashboardComponent, canActivate:[authGuard], data:{ roles:['Admin'] } },
  
-  { path: '**', redirectTo: '' }
+ { path: '**', redirectTo: '' }
  
 ];
  

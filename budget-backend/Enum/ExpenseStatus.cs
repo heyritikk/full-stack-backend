@@ -1,9 +1,10 @@
 ﻿namespace InternalBudgetTracker.Enum
 {
-    public enum ExpenseStatus
-    {
-        Pending,
-        Approved,
-        Rejected
-    }
+ public enum ExpenseStatus
+ {
+ Pending,
+ Approved,
+ Rejected
+ }
 }
+

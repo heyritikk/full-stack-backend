@@ -10,94 +10,95 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace InternalBudgetTracker.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
-    [Migration("20260118113206_InitialCreate")]
-    partial class InitialCreate
-    {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
-        {
+ [DbContext(typeof(AppDbContext))]
+ [Migration("20260118113206_InitialCreate")]
+ partial class InitialCreate
+ {
+ /// <inheritdoc />
+ protected override void BuildTargetModel(ModelBuilder modelBuilder)
+ {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+ modelBuilder
+ .HasAnnotation("ProductVersion", "10.0.2")
+ .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+ SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("InternalBudgetTracker.Models.Department", b =>
-                {
-                    b.Property<int>("DepartmentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+ modelBuilder.Entity("InternalBudgetTracker.Models.Department", b =>
+ {
+ b.Property<int>("DepartmentId")
+ .ValueGeneratedOnAdd()
+ .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DepartmentId"));
+ SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DepartmentId"));
 
-                    b.Property<string>("DepartmentName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+ b.Property<string>("DepartmentName")
+ .IsRequired()
+ .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("DepartmentId");
+ b.HasKey("DepartmentId");
 
-                    b.ToTable("t_Department");
-                });
+ b.ToTable("t_Department");
+ });
 
-            modelBuilder.Entity("InternalBudgetTracker.Models.User", b =>
-                {
-                    b.Property<int>("UserId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+ modelBuilder.Entity("InternalBudgetTracker.Models.User", b =>
+ {
+ b.Property<int>("UserId")
+ .ValueGeneratedOnAdd()
+ .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+ SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
 
-                    b.Property<int>("DepartmentId")
-                        .HasColumnType("int");
+ b.Property<int>("DepartmentId")
+ .HasColumnType("int");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+ b.Property<string>("Email")
+ .IsRequired()
+ .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsVerified")
-                        .HasColumnType("bit");
+ b.Property<bool>("IsVerified")
+ .HasColumnType("bit");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+ b.Property<string>("Name")
+ .IsRequired()
+ .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+ b.Property<string>("Password")
+ .IsRequired()
+ .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(20)");
+ b.Property<string>("Role")
+ .IsRequired()
+ .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(20)");
+ b.Property<string>("Status")
+ .IsRequired()
+ .HasColumnType("nvarchar(20)");
 
-                    b.HasKey("UserId");
+ b.HasKey("UserId");
 
-                    b.HasIndex("DepartmentId");
+ b.HasIndex("DepartmentId");
 
-                    b.ToTable("t_User");
-                });
+ b.ToTable("t_User");
+ });
 
-            modelBuilder.Entity("InternalBudgetTracker.Models.User", b =>
-                {
-                    b.HasOne("InternalBudgetTracker.Models.Department", "Department")
-                        .WithMany("Users")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+ modelBuilder.Entity("InternalBudgetTracker.Models.User", b =>
+ {
+ b.HasOne("InternalBudgetTracker.Models.Department", "Department")
+ .WithMany("Users")
+ .HasForeignKey("DepartmentId")
+ .OnDelete(DeleteBehavior.Cascade)
+ .IsRequired();
 
-                    b.Navigation("Department");
-                });
+ b.Navigation("Department");
+ });
 
-            modelBuilder.Entity("InternalBudgetTracker.Models.Department", b =>
-                {
-                    b.Navigation("Users");
-                });
+ modelBuilder.Entity("InternalBudgetTracker.Models.Department", b =>
+ {
+ b.Navigation("Users");
+ });
 #pragma warning restore 612, 618
-        }
-    }
+ }
+ }
 }
+

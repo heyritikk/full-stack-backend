@@ -9,66 +9,67 @@ using System.Security.Claims;
 [Authorize]
 public class NotificationController : ControllerBase
 {
-    private readonly NotificationService _service;
+ private readonly NotificationService _service;
 
-    public NotificationController(NotificationService service)
-    {
-        _service = service;
-    }
+ public NotificationController(NotificationService service)
+ {
+ _service = service;
+ }
 
-    // GET LOGIN USER NOTIFICATIONS + COUNT
-    [HttpGet]
-    public IActionResult GetNotifications()
-    {
-        //  USER FROM TOKEN
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+ // GET LOGIN USER NOTIFICATIONS + COUNT
+ [HttpGet]
+ public IActionResult GetNotifications()
+ {
+ // USER FROM TOKEN
+ var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 
-        if (userIdClaim == null)
-            return Unauthorized("UserId not found in token");
+ if (userIdClaim == null)
+ return Unauthorized("UserId not found in token");
 
-        int userId = int.Parse(userIdClaim.Value);
-        Console.WriteLine("Token User Id=" + userId);
+ int userId = int.Parse(userIdClaim.Value);
+ Console.WriteLine("Token User Id=" + userId);
 
-        var notifications= _service.GetNotifications(userId);
-        var unreadCount= _service.GetUnreadCount(userId);
+ var notifications= _service.GetNotifications(userId);
+ var unreadCount= _service.GetUnreadCount(userId);
 
-        return Ok(new
-        {
-            status = 200,
-            unreadCount = unreadCount,
-            data = notifications
-        });
-    }
+ return Ok(new
+ {
+ status = 200,
+ unreadCount = unreadCount,
+ data = notifications
+ });
+ }
 
 
-    // MARK NOTIFICATION AS READ
-    // PATCH: api/notifications/read/5
-    [HttpPatch("read/{notificationId}")]
-    public IActionResult MarkAsRead(int notificationId)
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null)
-            return Unauthorized("UserId not found in token");
+ // MARK NOTIFICATION AS READ
+ // PATCH: api/notifications/read/5
+ [HttpPatch("read/{notificationId}")]
+ public IActionResult MarkAsRead(int notificationId)
+ {
+ var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+ if (userIdClaim == null)
+ return Unauthorized("UserId not found in token");
 
-        int userId = int.Parse(userIdClaim.Value);
+ int userId = int.Parse(userIdClaim.Value);
 
-        bool success = _service.MarkAsRead(notificationId, userId);
+ bool success = _service.MarkAsRead(notificationId, userId);
 
-        if (!success)
-        {
-            return NotFound(new
-            {
-                status = 404,
-                message = "Invalid request"
-            });
-        }
+ if (!success)
+ {
+ return NotFound(new
+ {
+ status = 404,
+ message = "Invalid request"
+ });
+ }
 
-        return Ok(new
-        {
-            status = 200,
-            message = "success"
-        });
-    }
+ return Ok(new
+ {
+ status = 200,
+ message = "success"
+ });
+ }
 
 
 }
+

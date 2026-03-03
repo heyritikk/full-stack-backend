@@ -11,12 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 // --- 1. THE "ALLOW EVERYTHING" CORS POLICY ---
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("OpenPolicy", policy =>
-    {
-        policy.AllowAnyOrigin()   // This allows ANY frontend to connect
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+ options.AddPolicy("OpenPolicy", policy =>
+ {
+ policy.AllowAnyOrigin() // This allows ANY frontend to connect
+ .AllowAnyHeader()
+ .AllowAnyMethod();
+ });
 });
 // ----------------------------------------------
 
@@ -24,23 +24,23 @@ builder.Services.AddControllers();
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+ options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+ options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        NameClaimType = ClaimTypes.Name,
-        RoleClaimType = ClaimTypes.Role,
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Security:SecretKey"] ?? "KJH@98sdF#23!dkL09@#Lksj$%23Fsd!@#")
-        )
-    };
+ options.TokenValidationParameters = new TokenValidationParameters
+ {
+ ValidateIssuer = false,
+ ValidateAudience = false,
+ ValidateLifetime = true,
+ ValidateIssuerSigningKey = true,
+ NameClaimType = ClaimTypes.Name,
+ RoleClaimType = ClaimTypes.Role,
+ IssuerSigningKey = new SymmetricSecurityKey(
+ Encoding.UTF8.GetBytes(builder.Configuration["Security:SecretKey"] ?? "KJH@98sdF#23!dkL09@#Lksj$%23Fsd!@#")
+ )
+ };
 });
 
 builder.Services.AddAuthorization();
@@ -48,7 +48,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+ options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<EmailService>();
@@ -61,8 +61,8 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+ app.UseSwagger();
+ app.UseSwaggerUI();
 }
 
 // --- 2. THE ORDER IS CRITICAL ---

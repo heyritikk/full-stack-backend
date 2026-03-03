@@ -1,8 +1,9 @@
 ﻿namespace InternalBudgetTracker.Enum
 {
-    public enum BudgetStatus
-    {
-        Active,
-        Closed
-    }
+ public enum BudgetStatus
+ {
+ Active,
+ Closed
+ }
 }
+

@@ -6,159 +6,182 @@ using System.Security.Claims;
 
 namespace InternalBudgetTracker.Services
 {
-     public class BudgetService
-    {
-        private readonly AppDbContext _context;
+ public class BudgetService
+ {
+ private readonly AppDbContext _context;
 
-        public BudgetService(AppDbContext context)
-        {
-            _context = context;
-        }
+ public BudgetService(AppDbContext context)
+ {
+ _context = context;
+ }
 
-        public string CreateBudget(BudgetCreateDTO dto, ClaimsPrincipal user)
-        {
-            //get data from token
-            //Console.WriteLine(user);
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
-             var roleClaim = user.FindFirst(ClaimTypes.Role);
-            var emailClaim = user.FindFirst(ClaimTypes.Email);
-           
+ public string CreateBudget(BudgetCreateDTO dto, ClaimsPrincipal user)
+ {
+ //get data from token
+ //Console.WriteLine(user);
+ var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+ var roleClaim = user.FindFirst(ClaimTypes.Role);
+ var emailClaim = user.FindFirst(ClaimTypes.Email);
+ 
 
-            if ( userIdClaim==null ||roleClaim == null)
-                throw new Exception("Invalid token");
+ if ( userIdClaim==null ||roleClaim == null)
+ throw new Exception("Invalid token");
 
-            if (roleClaim.Value != "Manager")
-                throw new Exception("Invalid permission");
+ if (roleClaim.Value != "Manager")
+ throw new Exception("Invalid permission");
 
-            var userId = int.Parse(userIdClaim.Value);
+ var userId = int.Parse(userIdClaim.Value);
 
-            //Budget create
-            var budget = new Budget
-            {
-                Title = dto.Title,
-                AmountAllocated = dto.AmountAllocated,
-                StartDate = DateTime.UtcNow,
-                EndDate = null,
-                CreatedByUserId = userId,
-                Status = BudgetStatus.Active,
-                DepartmentId = dto.DepartmentId
+ //Budget create
+ var budget = new Budget
+ {
+ Title = dto.Title,
+ AmountAllocated = dto.AmountAllocated,
+ StartDate = DateTime.UtcNow,
+ EndDate = null,
+ CreatedByUserId = userId,
+ Status = BudgetStatus.Active,
+ DepartmentId = dto.DepartmentId
 
-            };
+ };
 
-            _context.Budgets.Add(budget);
-            _context.SaveChanges();
+ _context.Budgets.Add(budget);
+ _context.SaveChanges();
 
-            return "success";
-        }
+ return "success";
+ }
 
-        //get budget by id or all
-        public List<Budget> GetBudgets(int? budgetId)
-        {
-            if (budgetId != null)
-            {
-                // Single budget by ID
-                return _context.Budgets
-                    .Where(b =>
-                        b.BudgetId == budgetId &&
-                        b.EndDate == null &&
-                        b.Status == BudgetStatus.Active
-                    )
-                    .ToList();
-            }
+ //get budget by id or all
+ public List<Budget> GetBudgets(int? budgetId)
+ {
+ if (budgetId != null)
+ {
+ // Single budget by ID
+ return _context.Budgets
+ .Where(b =>
+ b.BudgetId == budgetId &&
+ b.EndDate == null &&
+ b.Status == BudgetStatus.Active
+ )
+ .ToList();
+ }
 
-            // All active budgets
-            return _context.Budgets
-                .Where(b =>
-                    b.EndDate == null &&
-                    b.Status == BudgetStatus.Active
-                )
-                .ToList();
-        }
+ // All active budgets
+ return _context.Budgets
+ .Where(b =>
+ b.EndDate == null &&
+ b.Status == BudgetStatus.Active
+ )
+ .ToList();
+ }
 
-        //Service to Update Budget
-        public string UpdateBudget(int budgetId,BudgetUpdateDTO dto,ClaimsPrincipal user )
-        {
-            // Token se data
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
-            var roleClaim = user.FindFirst(ClaimTypes.Role);
-            var emailClaim = user.FindFirst(ClaimTypes.Email);
+ public List<Budget> GetBudgetsByLoggedInManager(ClaimsPrincipal user)
+ {
+ var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+ var roleClaim = user.FindFirst(ClaimTypes.Role);
 
-            if (userIdClaim == null || roleClaim == null)
-                throw new Exception("Invalid token");
+ if (userIdClaim == null || roleClaim == null)
+ throw new Exception("Invalid token");
 
-            if (roleClaim.Value != "Manager")
-                throw new Exception("Invalid permission");
+ if (roleClaim.Value != "Manager")
+ throw new Exception("Invalid permission");
 
-            int userId = int.Parse(userIdClaim.Value);
+ int userId = int.Parse(userIdClaim.Value);
 
-            //  Budget fetch (same user)
-            var budget = _context.Budgets.FirstOrDefault(b =>
-                b.BudgetId == budgetId &&
-                b.CreatedByUserId == userId &&
-                b.EndDate == null &&
-                b.Status == BudgetStatus.Active
-            );
+ return _context.Budgets
+ .Where(b =>
+ b.EndDate == null &&
+ b.Status == BudgetStatus.Active &&
+ b.CreatedByUserId == userId
+ )
+ .ToList();
+ }
 
-            if (budget == null)
-                throw new Exception("Invalid Budget ID or you did not create this budget");
+ //Service to Update Budget
+ public string UpdateBudget(int budgetId,BudgetUpdateDTO dto,ClaimsPrincipal user )
+ {
+ // Token se data
+ var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+ var roleClaim = user.FindFirst(ClaimTypes.Role);
+ var emailClaim = user.FindFirst(ClaimTypes.Email);
 
-            //  Partial update
-            if (dto.Title != null)
-                budget.Title = dto.Title;
+ if (userIdClaim == null || roleClaim == null)
+ throw new Exception("Invalid token");
 
-            if (dto.AmountAllocated.HasValue)
-                budget.AmountAllocated = dto.AmountAllocated.Value;
+ if (roleClaim.Value != "Manager")
+ throw new Exception("Invalid permission");
 
-            if (dto.DepartmentId.HasValue)
-                budget.DepartmentId = dto.DepartmentId.Value;
+ int userId = int.Parse(userIdClaim.Value);
 
-            _context.SaveChanges();
+ // Budget fetch (same user)
+ var budget = _context.Budgets.FirstOrDefault(b =>
+ b.BudgetId == budgetId &&
+ b.CreatedByUserId == userId &&
+ b.EndDate == null &&
+ b.Status == BudgetStatus.Active
+ );
 
-            return "success";
-        }
+ if (budget == null)
+ throw new Exception("Invalid Budget ID or you did not create this budget");
 
+ // Partial update
+ if (dto.Title != null)
+ budget.Title = dto.Title;
 
-        //Service to delete Budget
-        public string DeleteBudget(int budgetId, ClaimsPrincipal user)
-        {
-            // 1️⃣ Token se data nikalna
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
-            var roleClaim = user.FindFirst(ClaimTypes.Role);
-            var emailClaim = user.FindFirst(ClaimTypes.Email);
+ if (dto.AmountAllocated.HasValue)
+ budget.AmountAllocated = dto.AmountAllocated.Value;
 
-            if (userIdClaim == null || roleClaim == null)
-                throw new Exception("Invalid token");
+ if (dto.DepartmentId.HasValue)
+ budget.DepartmentId = dto.DepartmentId.Value;
 
-            if (roleClaim.Value != "Manager")
-                throw new Exception("Invalid permission");
+ _context.SaveChanges();
 
-            int userId = int.Parse(userIdClaim.Value);
-
-            // 2️⃣ Budget find karo
-            var budget = _context.Budgets
-                .FirstOrDefault(b => b.BudgetId == budgetId && b.EndDate == null);
-            if (budget == null)
-                throw new Exception("Invalid budget id");
-
-            // 3️⃣ Check: same user ne create kiya?
-            if (budget.CreatedByUserId != userId)
-                throw new Exception("You did not create this budget");
-
-            // 4️⃣ Soft delete
-            budget.Status = BudgetStatus.Closed;
-            budget.EndDate = DateTime.UtcNow;
-
-            _context.SaveChanges();
-
-            return "Budget deleted successfully";
-        }
+ return "success";
+ }
 
 
-    }
+ //Service to delete Budget
+ public string DeleteBudget(int budgetId, ClaimsPrincipal user)
+ {
+ // 1⃣ Token se data nikalna
+ var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+ var roleClaim = user.FindFirst(ClaimTypes.Role);
+ var emailClaim = user.FindFirst(ClaimTypes.Email);
+
+ if (userIdClaim == null || roleClaim == null)
+ throw new Exception("Invalid token");
+
+ if (roleClaim.Value != "Manager")
+ throw new Exception("Invalid permission");
+
+ int userId = int.Parse(userIdClaim.Value);
+
+ // 2⃣ Budget find karo
+ var budget = _context.Budgets
+ .FirstOrDefault(b => b.BudgetId == budgetId && b.EndDate == null);
+ if (budget == null)
+ throw new Exception("Invalid budget id");
+
+ // 3⃣ Check: same user ne create kiya?
+ if (budget.CreatedByUserId != userId)
+ throw new Exception("You did not create this budget");
+
+ // 4⃣ Soft delete
+ budget.Status = BudgetStatus.Closed;
+ budget.EndDate = DateTime.UtcNow;
+
+ _context.SaveChanges();
+
+ return "Budget deleted successfully";
+ }
+
+
+ }
 
 
 
 }
+
 
 
 
