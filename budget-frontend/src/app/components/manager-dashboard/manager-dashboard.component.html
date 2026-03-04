@@ -1,4 +1,3 @@
-
 <div class="layout" [class.sidebar-collapsed]="!isSidebarOpen">
 
  <!-- Sidebar -->
@@ -27,7 +26,7 @@
  </li>
  <li [class.active]="section === 'notifications'" (click)="setSection('notifications')">
  <span class="menu-icon">&#9713;</span>
- <span class="menu-text">Notifications</span>
+ <span class="menu-text">Notifications <span *ngIf="unreadNotificationsCount > 0">({{ unreadNotificationsCount }})</span></span>
  </li>
  <li class="logout-item" (click)="logout()">
  <span class="menu-icon">&#8617;</span>
@@ -137,32 +136,14 @@
  </div>
  </section>
 
- <!-- Expense Approvals (separate navbar item) -->
+ <!-- Expense Approvals -->
  <section *ngIf="section === 'expense-approvals'" class="card">
  <div class="card-header">
  <h4>Expense Approvals</h4>
  <div class="approval-nav">
- <button
- class="chip"
- type="button"
- [ngClass]="{ 'active': approvalFilter === 'Pending' }"
- (click)="setApprovalFilter('Pending')">
- Pending
- </button>
- <button
- class="chip"
- type="button"
- [ngClass]="{ 'active': approvalFilter === 'Approved' }"
- (click)="setApprovalFilter('Approved')">
- Approved
- </button>
- <button
- class="chip"
- type="button"
- [ngClass]="{ 'active': approvalFilter === 'Rejected' }"
- (click)="setApprovalFilter('Rejected')">
- Rejected
- </button>
+ <button class="chip" type="button" [ngClass]="{ 'active': approvalFilter === 'Pending' }" (click)="setApprovalFilter('Pending')">Pending</button>
+ <button class="chip" type="button" [ngClass]="{ 'active': approvalFilter === 'Approved' }" (click)="setApprovalFilter('Approved')">Approved</button>
+ <button class="chip" type="button" [ngClass]="{ 'active': approvalFilter === 'Rejected' }" (click)="setApprovalFilter('Rejected')">Rejected</button>
  </div>
  </div>
 
@@ -193,18 +174,10 @@
  </span>
  </td>
  <td class="actions">
- <button
- type="button"
- class="primary-btn"
- (click)="approveExpense(e)"
- [disabled]="e.status === 'Approved' || !canManageExpense(e)">
+ <button type="button" class="primary-btn" (click)="approveExpense(e)" [disabled]="e.status !== 'Pending' || !canManageExpense(e)">
  Approve
  </button>
- <button
- type="button"
- class="danger-outline-btn"
- (click)="rejectExpense(e)"
- [disabled]="e.status === 'Rejected' || !canManageExpense(e)">
+ <button type="button" class="danger-outline-btn" (click)="rejectExpense(e)" [disabled]="e.status !== 'Pending' || !canManageExpense(e)">
  Reject
  </button>
  </td>
@@ -222,20 +195,22 @@
  <h4>Notifications</h4>
 
  <div *ngIf="!notifications.length" class="empty-state">
- No notifications yet. Actions on budgets and expenses will appear here.
+ No notifications yet.
  </div>
 
  <ul *ngIf="notifications.length" class="notification-list">
  <li *ngFor="let n of notifications">
  <div class="notification-pill" [ngClass]="{
+ 'notif-unread': n.readStatus === 'Unread',
+ 'notif-read': n.readStatus === 'Read',
  'notif-expense': n.type === 'expense',
  'notif-budget': n.type === 'budget'
  }">
- <span class="notif-type">
- {{ n.type === 'expense' ? 'Expense' : 'Budget' }}
- </span>
+ <span class="notif-type">{{ n.type === 'expense' ? 'Expense' : 'Budget' }}</span>
  <span class="notif-message">{{ n.message }}</span>
  <span class="notif-time">{{ n.createdAt | date:'shortTime' }}</span>
+ <span class="notif-read-state" [ngClass]="{ 'is-unread': n.readStatus === 'Unread', 'is-read': n.readStatus === 'Read' }">{{ n.readStatus }}</span>
+ <button type="button" class="notif-read-btn" (click)="markNotificationAsRead(n)" [disabled]="n.readStatus === 'Read'">Mark as read</button>
  </div>
  </li>
  </ul>
@@ -279,5 +254,3 @@
  </div>
 
 </div>
-
-

@@ -29,6 +29,7 @@ export class AdminDashboardComponent implements OnInit {
  departmentError = '';
  budgetError = '';
  summaryError = '';
+ selectedDepartmentFilter = 'All';
 
  loggedInEmail: string | null = null;
 
@@ -57,6 +58,36 @@ export class AdminDashboardComponent implements OnInit {
  this.selectedMenu = section;
  }
 
+ onDepartmentFilterChange(event: Event) {
+ const target = event.target as HTMLSelectElement | null;
+ this.selectedDepartmentFilter = target?.value || 'All';
+ }
+
+ get availableDepartments(): string[] {
+ const names = new Set<string>();
+
+ for (const row of this.departmentReport) {
+ const name = this.extractDepartmentName(row);
+ if (name) names.add(name);
+ }
+ for (const row of this.budgetReport) {
+ const name = this.extractDepartmentName(row);
+ if (name) names.add(name);
+ }
+
+ return Array.from(names).sort((a, b) => a.localeCompare(b));
+ }
+
+ get filteredDepartmentReport(): any[] {
+ if (this.selectedDepartmentFilter === 'All') return this.departmentReport;
+ return this.departmentReport.filter(r => this.extractDepartmentName(r) === this.selectedDepartmentFilter);
+ }
+
+ get filteredBudgetReport(): any[] {
+ if (this.selectedDepartmentFilter === 'All') return this.budgetReport;
+ return this.budgetReport.filter(r => this.extractDepartmentName(r) === this.selectedDepartmentFilter);
+ }
+
  toggleSidebar() {
  this.isSidebarOpen = !this.isSidebarOpen;
  }
@@ -80,8 +111,8 @@ export class AdminDashboardComponent implements OnInit {
 
  let currentY = 84;
 
- currentY = this.addTableSection(doc, 'Department Report', this.departmentReport, currentY, pageWidth);
- currentY = this.addTableSection(doc, 'Budget Report', this.budgetReport, currentY, pageWidth);
+ currentY = this.addTableSection(doc, 'Department Report', this.filteredDepartmentReport, currentY, pageWidth);
+ currentY = this.addTableSection(doc, 'Budget Report', this.filteredBudgetReport, currentY, pageWidth);
  this.addTableSection(doc, 'Summary Report', this.summaryReport, currentY, pageWidth);
 
  doc.save('planera-admin-report.pdf');
@@ -137,6 +168,17 @@ export class AdminDashboardComponent implements OnInit {
  .replace(/\s+/g, ' ')
  .trim()
  .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+ }
+
+ private extractDepartmentName(row: any): string {
+ if (!row || typeof row !== 'object') return '';
+ return String(
+ row.departmentName ??
+ row.DepartmentName ??
+ row.department ??
+ row.Department ??
+ ''
+ ).trim();
  }
 
  private loadReports() {

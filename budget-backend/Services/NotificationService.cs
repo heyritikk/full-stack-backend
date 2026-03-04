@@ -35,9 +35,7 @@ namespace InternalBudgetTracker.Services
  public List<Notification> GetNotifications(int userId)
  {
  return _context.Notifications
- .Where(n =>
- n.ToUserId == userId &&
- n.Status == ReadStatus.Unread)
+ .Where(n => n.ToUserId == userId)
  .OrderByDescending(n => n.CreatedDate)
  .ToList();
  }

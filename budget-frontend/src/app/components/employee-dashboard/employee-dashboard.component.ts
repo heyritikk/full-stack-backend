@@ -6,11 +6,15 @@ import { Expense, ExpenseService } from '../../services/expense.service';
 import { AuthService } from '../../services/auth.service';
 import { BudgetService } from '../../services/budget.service';
 import { ApiService, UserSummary } from '../../services/api.service';
+import { NotificationService, AppNotification } from '../../services/notification.service';
 
 interface NotificationItem {
+ notificationId: number;
+ type: string;
  message: string;
- status: 'Approved' | 'Rejected';
+ readStatus: 'Read' | 'Unread';
  createdAt: Date;
+ isLocal?: boolean;
 }
 
 interface EmployeeBudgetItem {
@@ -32,7 +36,8 @@ export class EmployeeDashboardComponent implements OnInit {
  isSidebarOpen = true;
 
  expenses: Expense[] = [];
- notifications: NotificationItem[] = [];
+notifications: NotificationItem[] = [];
+ unreadNotificationsCount = 0;
  budgets: EmployeeBudgetItem[] = [];
  managers: UserSummary[] = [];
 
@@ -50,7 +55,8 @@ export class EmployeeDashboardComponent implements OnInit {
  private authService: AuthService,
  private router: Router,
  private fb: FormBuilder,
- private apiService: ApiService
+ private apiService: ApiService,
+ private notificationService: NotificationService
  ) {}
 
  ngOnInit(): void {
@@ -60,6 +66,7 @@ export class EmployeeDashboardComponent implements OnInit {
  this.loadExpenses();
  this.loadBudgets();
  this.loadManagers();
+ this.loadNotifications();
  }
 
  buildForms() {
@@ -91,6 +98,9 @@ export class EmployeeDashboardComponent implements OnInit {
 
  setSection(name: string) {
  this.section = name;
+ if (name === 'notifications') {
+ this.loadNotifications();
+ }
  }
 
  toggleSidebar() {
@@ -120,7 +130,6 @@ export class EmployeeDashboardComponent implements OnInit {
  next: (res) => {
  this.expenses = res;
  this.isLoadingExpenses = false;
- this.buildNotificationsFromExpenses();
  },
  error: () => {
  this.isLoadingExpenses = false;
@@ -198,16 +207,63 @@ export class EmployeeDashboardComponent implements OnInit {
  });
  }
 
- buildNotificationsFromExpenses() {
- this.notifications = this.expenses
- .filter(e => e.status === 'Approved' || e.status === 'Rejected')
- .map(e => ({
- message: e.status === 'Approved'
- ? `Your expense "${e.title}" was approved.`
- : `Your expense "${e.title}" was rejected.`,
- status: e.status as 'Approved' | 'Rejected',
- createdAt: new Date()
+ private normalizeReadStatus(value: string | number | null | undefined): 'Read' | 'Unread' {
+ if (value === 1 || String(value).toLowerCase() === 'read') {
+ return 'Read';
+ }
+ return 'Unread';
+ }
+
+ private mapNotificationType(type: string | number): string {
+ if (typeof type === 'string') {
+ return type;
+ }
+ if (type === 0) return 'ExpenseApproval';
+ if (type === 1) return 'ExpenseRejected';
+ if (type === 2) return 'ExpensePending';
+ return 'Notification';
+ }
+
+ loadNotifications() {
+ this.notificationService.getNotifications().subscribe({
+ next: (res) => {
+ const list = res?.data ?? [];
+ this.notifications = list.map((n: AppNotification) => ({
+ notificationId: n.notificationId,
+ type: this.mapNotificationType(n.type),
+ message: n.message,
+ readStatus: this.normalizeReadStatus(n.status),
+ createdAt: n.createdDate ? new Date(n.createdDate) : new Date()
  }));
+ this.unreadNotificationsCount = this.notifications.filter(n => n.readStatus === 'Unread').length;
+ },
+ error: () => {
+ this.notifications = [];
+ this.unreadNotificationsCount = 0;
+ }
+ });
+ }
+
+ markNotificationAsRead(notification: NotificationItem) {
+ if (notification.readStatus === 'Read') {
+ return;
+ }
+
+ if (notification.isLocal || !notification.notificationId) {
+ notification.readStatus = 'Read';
+ this.unreadNotificationsCount = this.notifications.filter(n => n.readStatus === 'Unread').length;
+ return;
+ }
+
+ this.notificationService.markAsRead(notification.notificationId).subscribe({
+ next: () => {
+ notification.readStatus = 'Read';
+ this.unreadNotificationsCount = this.notifications.filter(n => n.readStatus === 'Unread').length;
+ },
+ error: () => {
+ // keep previous status on failure
+ }
+ });
  }
 
  setupBudgetManagerBinding() {

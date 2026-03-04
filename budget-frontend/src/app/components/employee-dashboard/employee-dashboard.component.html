@@ -13,19 +13,19 @@
 
  <ul class="menu">
  <li [class.active]="section === 'create-expense'" (click)="setSection('create-expense')">
- <span class="menu-icon">⊞</span>
+ <span class="menu-icon">&#8862;</span>
  <span class="menu-text">Create Expense</span>
  </li>
  <li [class.active]="section === 'view-expenses'" (click)="setSection('view-expenses')">
- <span class="menu-icon">▤</span>
+ <span class="menu-icon">&#9636;</span>
  <span class="menu-text">View Expenses</span>
  </li>
  <li [class.active]="section === 'notifications'" (click)="setSection('notifications')">
- <span class="menu-icon">◉</span>
- <span class="menu-text">Notifications</span>
+ <span class="menu-icon">&#9713;</span>
+ <span class="menu-text">Notifications <span *ngIf="unreadNotificationsCount > 0">({{ unreadNotificationsCount }})</span></span>
  </li>
  <li class="logout-item" (click)="logout()">
- <span class="menu-icon">↩</span>
+ <span class="menu-icon">&#8617;</span>
  <span class="menu-text">Logout</span>
  </li>
  </ul>
@@ -151,18 +151,24 @@
  <h4>Notifications</h4>
 
  <div *ngIf="!notifications.length" class="empty-state">
- No notifications yet. Approved or rejected expenses will appear here.
+ No notifications yet.
  </div>
 
  <ul *ngIf="notifications.length" class="notification-list">
  <li *ngFor="let n of notifications">
  <div class="notification-pill" [ngClass]="{
- 'notif-approved': n.status === 'Approved',
- 'notif-rejected': n.status === 'Rejected'
+ 'notif-unread': n.readStatus === 'Unread',
+ 'notif-read': n.readStatus === 'Read'
  }">
- <span class="notif-type">{{ n.status }}</span>
+ <span class="notif-type">{{ n.type }}</span>
  <span class="notif-message">{{ n.message }}</span>
  <span class="notif-time">{{ n.createdAt | date:'shortTime' }}</span>
+ <span class="notif-read-state" [ngClass]="{ 'is-unread': n.readStatus === 'Unread', 'is-read': n.readStatus === 'Read' }">
+ {{ n.readStatus }}
+ </span>
+ <button type="button" class="notif-read-btn" (click)="markNotificationAsRead(n)" [disabled]="n.readStatus === 'Read'">
+ Mark as read
+ </button>
  </div>
  </li>
  </ul>
@@ -187,12 +193,10 @@
  <input type="number" formControlName="amount" />
  </div>
 
- 
-
  <select formControlName="budgetId">
  <option value="">Select Budget</option>
- <option *ngFor="let b of budgets"[value]="b.budgetId">
- {{b.title}}
+ <option *ngFor="let b of budgets" [value]="b.budgetId">
+ {{ b.title }}
  </option>
  </select>
 
@@ -210,7 +214,3 @@
  </div>
 
 </div>
-
-
-
-

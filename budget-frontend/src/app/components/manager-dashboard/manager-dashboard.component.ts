@@ -8,11 +8,15 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { AuthService } from '../../services/auth.service';
 import { Budget, BudgetService } from '../../services/budget.service';
 import { Expense, ExpenseService } from '../../services/expense.service';
+import { NotificationService, AppNotification } from '../../services/notification.service';
 
 interface NotificationItem {
+ notificationId: number;
+ readStatus: 'Read' | 'Unread';
  message: string;
  type: 'expense' | 'budget';
  createdAt: Date;
+ isLocal?: boolean;
 }
 
 @Component({
@@ -29,7 +33,8 @@ export class ManagerDashboardComponent implements OnInit {
 
  budgets: Budget[] = [];
  expenses: Expense[] = [];
- notifications: NotificationItem[] = [];
+notifications: NotificationItem[] = [];
+ unreadNotificationsCount = 0;
 
  pendingExpensesCount = 0;
 
@@ -54,6 +59,7 @@ export class ManagerDashboardComponent implements OnInit {
  constructor(
  private budgetService: BudgetService,
  private expenseService: ExpenseService,
+ private notificationService: NotificationService,
  private router: Router,
  private fb: FormBuilder,
  private authService: AuthService
@@ -64,6 +70,7 @@ export class ManagerDashboardComponent implements OnInit {
  this.buildForms();
  this.loadBudgets();
  this.loadExpenses();
+ this.loadNotifications();
  }
 
  buildForms() {
@@ -91,10 +98,13 @@ export class ManagerDashboardComponent implements OnInit {
  }
 
  get filteredExpenses(): Expense[] {
+ const normalize = (status: string | undefined | null) =>
+ (status ?? '').toLowerCase();
+
  if (this.approvalFilter === 'All') {
  return this.expenses;
  }
- return this.expenses.filter(e => e.status === this.approvalFilter);
+ return this.expenses.filter(e => normalize(e.status) === this.approvalFilter.toLowerCase());
  }
 
  setSection(name:string){
@@ -104,6 +114,9 @@ export class ManagerDashboardComponent implements OnInit {
  }
  if (name === 'expense-approvals') {
  this.loadExpenses();
+ }
+ if (name === 'notifications') {
+ this.loadNotifications();
  }
  }
 
@@ -136,6 +149,13 @@ export class ManagerDashboardComponent implements OnInit {
  const currentEmail = this.authService.getEmail();
  const currentUserId = this.authService.getUserId();
 
+ const normalizeStatus = (status: string | undefined | null): 'Pending' | 'Approved' | 'Rejected' => {
+ const value = (status ?? '').toLowerCase();
+ if (value === 'approved') return 'Approved';
+ if (value === 'rejected') return 'Rejected';
+ return 'Pending';
+ };
+
  this.expenses = res.filter(e => {
  if (e.managerId && currentUserId) {
  return String(e.managerId) === String(currentUserId);
@@ -143,8 +163,11 @@ export class ManagerDashboardComponent implements OnInit {
  if (e.managerEmail && currentEmail) {
  return e.managerEmail.toLowerCase() === currentEmail.toLowerCase();
  }
- return e.status === 'Pending';
- });
+ return false;
+ }).map(e => ({
+ ...e,
+ status: normalizeStatus(e.status)
+ }));
 
  this.pendingExpensesCount = this.expenses.filter(e => e.status === 'Pending').length;
  this.isLoadingExpenses = false;
@@ -222,7 +245,7 @@ export class ManagerDashboardComponent implements OnInit {
  }
 
  approveExpense(expense: Expense) {
- if (!this.canManageExpense(expense)) {
+ if (!this.canManageExpense(expense) || expense.status !== 'Pending') {
  return;
  }
  this.expenseService.approveOrRejectExpense(expense.id, 'Approve').subscribe({
@@ -240,7 +263,7 @@ export class ManagerDashboardComponent implements OnInit {
  }
 
  rejectExpense(expense: Expense) {
- if (!this.canManageExpense(expense)) {
+ if (!this.canManageExpense(expense) || expense.status !== 'Pending') {
  return;
  }
  this.expenseService.approveOrRejectExpense(expense.id, 'Reject').subscribe({
@@ -259,9 +282,73 @@ export class ManagerDashboardComponent implements OnInit {
 
  pushNotification(message: string, type: 'expense' | 'budget') {
  this.notifications.unshift({
+ notificationId: 0,
+ readStatus: 'Unread',
  message,
  type,
- createdAt: new Date()
+ createdAt: new Date(),
+ isLocal: true
+ });
+ this.unreadNotificationsCount = this.notifications.filter(n => n.readStatus === 'Unread').length;
+ }
+
+ private normalizeReadStatus(value: string | number | null | undefined): 'Read' | 'Unread' {
+ if (value === 1 || String(value).toLowerCase() === 'read') {
+ return 'Read';
+ }
+ return 'Unread';
+ }
+
+ private mapNotificationType(type: string | number): 'expense' | 'budget' {
+ if (typeof type === 'string') {
+ const lowered = type.toLowerCase();
+ if (lowered.includes('budget')) return 'budget';
+ return 'expense';
+ }
+ return type === 2 ? 'expense' : 'expense';
+ }
+
+ loadNotifications() {
+ this.notificationService.getNotifications().subscribe({
+ next: (res) => {
+ const serverNotifications = (res?.data ?? []).map((n: AppNotification) => ({
+ notificationId: n.notificationId,
+ readStatus: this.normalizeReadStatus(n.status),
+ message: n.message,
+ type: this.mapNotificationType(n.type),
+ createdAt: n.createdDate ? new Date(n.createdDate) : new Date(),
+ isLocal: false
+ }));
+
+ const localNotifications = this.notifications.filter(n => n.isLocal);
+ this.notifications = [...localNotifications, ...serverNotifications];
+ this.unreadNotificationsCount = this.notifications.filter(n => n.readStatus === 'Unread').length;
+ },
+ error: () => {
+ this.unreadNotificationsCount = this.notifications.filter(n => n.readStatus === 'Unread').length;
+ }
+ });
+ }
+
+ markNotificationAsRead(notification: NotificationItem) {
+ if (notification.readStatus === 'Read') {
+ return;
+ }
+
+ if (notification.isLocal || !notification.notificationId) {
+ notification.readStatus = 'Read';
+ this.unreadNotificationsCount = this.notifications.filter(n => n.readStatus === 'Unread').length;
+ return;
+ }
+
+ this.notificationService.markAsRead(notification.notificationId).subscribe({
+ next: () => {
+ notification.readStatus = 'Read';
+ this.unreadNotificationsCount = this.notifications.filter(n => n.readStatus === 'Unread').length;
+ },
+ error: () => {
+ // keep previous status on failure
+ }
  });
  }
 

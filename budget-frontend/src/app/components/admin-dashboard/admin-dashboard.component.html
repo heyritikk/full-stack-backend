@@ -77,21 +77,28 @@
  <div class="card focus-card" id="departmentSection">
  <div class="card-header">
  <h4>Department Report</h4>
+ <div class="report-filters">
+ <label for="departmentFilter">Department</label>
+ <select id="departmentFilter" [value]="selectedDepartmentFilter" (change)="onDepartmentFilterChange($event)">
+ <option value="All">All</option>
+ <option *ngFor="let d of availableDepartments" [value]="d">{{ d }}</option>
+ </select>
+ </div>
  </div>
 
  <div *ngIf="isLoadingDepartment">Loading department report...</div>
  <div *ngIf="departmentError" class="error-text">{{ departmentError }}</div>
 
- <div *ngIf="!isLoadingDepartment && !departmentError && departmentReport.length" class="table-wrap table-wrap-fill">
+ <div *ngIf="!isLoadingDepartment && !departmentError && filteredDepartmentReport.length" class="table-wrap table-wrap-fill">
  <table class="table">
  <thead>
  <tr>
- <th *ngFor="let key of objectKeys(departmentReport[0])">{{ key | titlecase }}</th>
+ <th *ngFor="let key of objectKeys(filteredDepartmentReport[0])">{{ key | titlecase }}</th>
  </tr>
  </thead>
  <tbody>
- <tr *ngFor="let row of departmentReport">
- <td *ngFor="let key of objectKeys(departmentReport[0])">
+ <tr *ngFor="let row of filteredDepartmentReport">
+ <td *ngFor="let key of objectKeys(filteredDepartmentReport[0])">
  {{ row[key] }}
  </td>
  </tr>
@@ -99,7 +106,7 @@
  </table>
  </div>
 
- <div *ngIf="!isLoadingDepartment && !departmentError && !departmentReport.length" class="empty-state">
+ <div *ngIf="!isLoadingDepartment && !departmentError && !filteredDepartmentReport.length" class="empty-state">
  No department report data.
  </div>
  </div>
@@ -110,21 +117,28 @@
  <div class="card focus-card" id="budgetSection">
  <div class="card-header">
  <h4>Budget Report</h4>
+ <div class="report-filters">
+ <label for="budgetDepartmentFilter">Department</label>
+ <select id="budgetDepartmentFilter" [value]="selectedDepartmentFilter" (change)="onDepartmentFilterChange($event)">
+ <option value="All">All</option>
+ <option *ngFor="let d of availableDepartments" [value]="d">{{ d }}</option>
+ </select>
+ </div>
  </div>
 
  <div *ngIf="isLoadingBudget">Loading budget report...</div>
  <div *ngIf="budgetError" class="error-text">{{ budgetError }}</div>
 
- <div *ngIf="!isLoadingBudget && !budgetError && budgetReport.length" class="table-wrap table-wrap-fill">
+ <div *ngIf="!isLoadingBudget && !budgetError && filteredBudgetReport.length" class="table-wrap table-wrap-fill">
  <table class="table">
  <thead>
  <tr>
- <th *ngFor="let key of objectKeys(budgetReport[0])">{{ key | titlecase }}</th>
+ <th *ngFor="let key of objectKeys(filteredBudgetReport[0])">{{ key | titlecase }}</th>
  </tr>
  </thead>
  <tbody>
- <tr *ngFor="let row of budgetReport">
- <td *ngFor="let key of objectKeys(budgetReport[0])">
+ <tr *ngFor="let row of filteredBudgetReport">
+ <td *ngFor="let key of objectKeys(filteredBudgetReport[0])">
  {{ row[key] }}
  </td>
  </tr>
@@ -132,7 +146,7 @@
  </table>
  </div>
 
- <div *ngIf="!isLoadingBudget && !budgetError && !budgetReport.length" class="empty-state">
+ <div *ngIf="!isLoadingBudget && !budgetError && !filteredBudgetReport.length" class="empty-state">
  No budget report data.
  </div>
  </div>
