@@ -248,6 +248,9 @@ notifications: NotificationItem[] = [];
  if (!this.canManageExpense(expense) || expense.status !== 'Pending') {
  return;
  }
+ if (expense.exceedsBudget && !confirm('This expense exceeds the remaining budget. Are you sure you want to approve it?')) {
+ return;
+ }
  this.expenseService.approveOrRejectExpense(expense.id, 'Approve').subscribe({
  next: () => {
  this.pushNotification(`Expense "${expense.title}" approved.`, 'expense');

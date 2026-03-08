@@ -1,7 +1,8 @@
-﻿using InternalBudgetTracker.Data;
+using InternalBudgetTracker.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 
 namespace InternalBudgetTracker.Controllers
@@ -18,21 +19,42 @@ namespace InternalBudgetTracker.Controllers
  _context = context;
  }
 
- // GET /api/report/department
+ private static bool HasDateFilter(DateTime? start, DateTime? end) =>
+ start.HasValue || end.HasValue;
+
+ // GET /api/report/department?startDate=&endDate=
  [HttpGet("department")]
- public IActionResult GetDepartmentReport()
+ public IActionResult GetDepartmentReport([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
  {
+ var useDateFilter = HasDateFilter(startDate, endDate);
+
  var data = _context.Departments
  .AsNoTracking()
  .Select(d => new
  {
  departmentId = d.DepartmentId,
  departmentName = d.DepartmentName,
- totalBudgets = _context.Budgets.Count(b => b.DepartmentId == d.DepartmentId),
- totalAllocated = _context.Budgets
+ totalBudgets = useDateFilter
+ ? _context.Budgets.Count(b => b.DepartmentId == d.DepartmentId &&
+ (!startDate.HasValue || b.StartDate >= startDate) &&
+ (!endDate.HasValue || b.StartDate <= endDate))
+ : _context.Budgets.Count(b => b.DepartmentId == d.DepartmentId),
+ totalAllocated = useDateFilter
+ ? _context.Budgets
+ .Where(b => b.DepartmentId == d.DepartmentId &&
+ (!startDate.HasValue || b.StartDate >= startDate) &&
+ (!endDate.HasValue || b.StartDate <= endDate))
+ .Sum(b => (decimal?)b.AmountAllocated) ?? 0m
+ : _context.Budgets
  .Where(b => b.DepartmentId == d.DepartmentId)
  .Sum(b => (decimal?)b.AmountAllocated) ?? 0m,
- totalApprovedExpenses = _context.Expenses
+ totalApprovedExpenses = useDateFilter
+ ? _context.Expenses
+ .Where(e => e.Budget.DepartmentId == d.DepartmentId && e.Status == Enum.ExpenseStatus.Approved &&
+ (!startDate.HasValue || e.SubmittedDate >= startDate) &&
+ (!endDate.HasValue || e.SubmittedDate <= endDate))
+ .Sum(e => (decimal?)e.Amount) ?? 0m
+ : _context.Expenses
  .Where(e => e.Budget.DepartmentId == d.DepartmentId && e.Status == Enum.ExpenseStatus.Approved)
  .Sum(e => (decimal?)e.Amount) ?? 0m
  })
@@ -41,20 +63,35 @@ namespace InternalBudgetTracker.Controllers
  return Ok(data);
  }
 
- // GET /api/report/budget
+ // GET /api/report/budget?startDate=&endDate=
  [HttpGet("budget")]
- public IActionResult GetBudgetReport()
+ public IActionResult GetBudgetReport([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
  {
- var data = _context.Budgets
+ var useDateFilter = HasDateFilter(startDate, endDate);
+
+ var query = _context.Budgets
  .Include(b => b.Department)
- .AsNoTracking()
+ .AsNoTracking();
+
+ if (useDateFilter)
+ query = query.Where(b =>
+ (!startDate.HasValue || b.StartDate >= startDate) &&
+ (!endDate.HasValue || b.StartDate <= endDate));
+
+ var data = query
  .Select(b => new
  {
  budgetId = b.BudgetId,
  title = b.Title,
  departmentName = b.Department != null ? b.Department.DepartmentName : null,
  allocated = b.AmountAllocated,
- spent = _context.Expenses
+ spent = useDateFilter
+ ? _context.Expenses
+ .Where(e => e.BudgetId == b.BudgetId && e.Status == Enum.ExpenseStatus.Approved &&
+ (!startDate.HasValue || e.SubmittedDate >= startDate) &&
+ (!endDate.HasValue || e.SubmittedDate <= endDate))
+ .Sum(e => (decimal?)e.Amount) ?? 0m
+ : _context.Expenses
  .Where(e => e.BudgetId == b.BudgetId && e.Status == Enum.ExpenseStatus.Approved)
  .Sum(e => (decimal?)e.Amount) ?? 0m
  })
@@ -72,25 +109,43 @@ namespace InternalBudgetTracker.Controllers
  return Ok(data);
  }
 
- // GET /api/report/summary
+ // GET /api/report/summary?startDate=&endDate=
  [HttpGet("summary")]
- public IActionResult GetSummaryReport()
+ public IActionResult GetSummaryReport([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
  {
- var totalBudgets = _context.Budgets.Count();
- var totalAllocated = _context.Budgets.Sum(b => (decimal?)b.AmountAllocated) ?? 0m;
- var totalApprovedExpenses = _context.Expenses
- .Where(e => e.Status == Enum.ExpenseStatus.Approved)
- .Sum(e => (decimal?)e.Amount) ?? 0m;
+ var useDateFilter = HasDateFilter(startDate, endDate);
 
- var overBudgetCount = _context.Budgets
+ var budgetQuery = _context.Budgets.AsNoTracking();
+ if (useDateFilter)
+ budgetQuery = budgetQuery.Where(b =>
+ (!startDate.HasValue || b.StartDate >= startDate) &&
+ (!endDate.HasValue || b.StartDate <= endDate));
+
+ var totalBudgets = budgetQuery.Count();
+ var totalAllocated = budgetQuery.Sum(b => (decimal?)b.AmountAllocated) ?? 0m;
+
+ var expenseQuery = _context.Expenses.Where(e => e.Status == Enum.ExpenseStatus.Approved);
+ if (useDateFilter)
+ expenseQuery = expenseQuery.Where(e =>
+ (!startDate.HasValue || e.SubmittedDate >= startDate) &&
+ (!endDate.HasValue || e.SubmittedDate <= endDate));
+ var totalApprovedExpenses = expenseQuery.Sum(e => (decimal?)e.Amount) ?? 0m;
+
+ var budgetList = budgetQuery.ToList();
+ var overBudgetCount = budgetList
  .Select(b => new
  {
  allocated = b.AmountAllocated,
- spent = _context.Expenses
+ spent = useDateFilter
+ ? _context.Expenses
+ .Where(e => e.BudgetId == b.BudgetId && e.Status == Enum.ExpenseStatus.Approved &&
+ (!startDate.HasValue || e.SubmittedDate >= startDate) &&
+ (!endDate.HasValue || e.SubmittedDate <= endDate))
+ .Sum(e => (decimal?)e.Amount) ?? 0m
+ : _context.Expenses
  .Where(e => e.BudgetId == b.BudgetId && e.Status == Enum.ExpenseStatus.Approved)
  .Sum(e => (decimal?)e.Amount) ?? 0m
  })
- .ToList()
  .Count(x => x.spent > x.allocated);
 
  var summary = new[]

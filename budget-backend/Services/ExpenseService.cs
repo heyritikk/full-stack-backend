@@ -1,4 +1,4 @@
-﻿using InternalBudgetTracker.Data;
+using InternalBudgetTracker.Data;
 using InternalBudgetTracker.DTOs;
 using InternalBudgetTracker.Enum;
 using InternalBudgetTracker.Models;
@@ -121,6 +121,7 @@ namespace InternalBudgetTracker.Services
  if (item == null) throw new Exception("Expense not found");
 
  var approval = approvals.FirstOrDefault(a => a.ExpenseId == item.ExpenseId);
+ var (remainingBudget, exceedsBudget) = GetBudgetStatus(item.BudgetId, item.Amount, item.Status);
 
  return new
  {
@@ -132,7 +133,9 @@ namespace InternalBudgetTracker.Services
  employeeName = item.Employee != null ? item.Employee.Name : null,
  status = item.Status.ToString(),
  managerId = approval?.ManagerId,
- managerEmail = approval?.Manager?.Email
+ managerEmail = approval?.Manager?.Email,
+ exceedsBudget,
+ remainingBudget
  };
  }
 
@@ -143,7 +146,27 @@ namespace InternalBudgetTracker.Services
  a => a.ExpenseId,
  (e, a) => new { e, a }
  )
- .Select(x => new
+ .ToList();
+
+ var budgetIds = list.Select(x => x.e.BudgetId).Distinct().ToList();
+ var budgetAmounts = _context.Budgets
+ .Where(b => budgetIds.Contains(b.BudgetId))
+ .ToDictionary(b => b.BudgetId, b => b.AmountAllocated);
+
+ var approvedSums = _context.Expenses
+ .Where(e => budgetIds.Contains(e.BudgetId) && e.Status == ExpenseStatus.Approved && e.EndDate == null)
+ .GroupBy(e => e.BudgetId)
+ .Select(g => new { BudgetId = g.Key, Total = g.Sum(e => e.Amount) })
+ .ToDictionary(x => x.BudgetId, x => x.Total);
+
+ var result = list.Select(x =>
+ {
+ var allocated = budgetAmounts.GetValueOrDefault(x.e.BudgetId, 0);
+ var approvedTotal = approvedSums.GetValueOrDefault(x.e.BudgetId, 0);
+ var remaining = allocated - approvedTotal;
+ var exceedsBudget = x.e.Status == ExpenseStatus.Pending && x.e.Amount > remaining;
+
+ return new
  {
  id = x.e.ExpenseId,
  title = x.e.Description,
@@ -153,11 +176,27 @@ namespace InternalBudgetTracker.Services
  employeeName = x.e.Employee != null ? x.e.Employee.Name : null,
  status = x.e.Status.ToString(),
  managerId = x.a.ManagerId,
- managerEmail = x.a.Manager != null ? x.a.Manager.Email : null
- })
- .ToList();
+ managerEmail = x.a.Manager != null ? x.a.Manager.Email : null,
+ exceedsBudget,
+ remainingBudget = remaining
+ };
+ }).ToList();
 
- return list;
+ return result;
+ }
+
+ private (decimal remainingBudget, bool exceedsBudget) GetBudgetStatus(int budgetId, decimal expenseAmount, ExpenseStatus expenseStatus)
+ {
+ var budget = _context.Budgets.FirstOrDefault(b => b.BudgetId == budgetId);
+ if (budget == null) return (0, false);
+
+ var approvedTotal = _context.Expenses
+ .Where(e => e.BudgetId == budgetId && e.Status == ExpenseStatus.Approved && e.EndDate == null)
+ .Sum(e => e.Amount);
+
+ var remaining = budget.AmountAllocated - approvedTotal;
+ var exceedsBudget = expenseStatus == ExpenseStatus.Pending && expenseAmount > remaining;
+ return (remaining, exceedsBudget);
  }
 
 

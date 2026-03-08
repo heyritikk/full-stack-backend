@@ -47,6 +47,12 @@
  </div>
 
  <div class="navbar-right">
+ <div class="report-filters navbar-date-filter">
+ <label for="dateFilter">Date</label>
+ <select id="dateFilter" [value]="selectedDateFilter" (change)="onDateFilterChange($event)">
+ <option *ngFor="let opt of dateFilterOptions" [value]="opt.value">{{ opt.label }}</option>
+ </select>
+ </div>
  <button type="button" class="primary-btn download-btn" (click)="downloadPdf()">Download PDF</button>
  <div class="user-pill">
  <div class="user-name">{{ displayName | titlecase }}</div>

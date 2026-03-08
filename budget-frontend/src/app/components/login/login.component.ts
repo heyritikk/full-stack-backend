@@ -1,4 +1,4 @@
-﻿import { Component } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -40,18 +40,18 @@ export class LoginComponent {
  this.successMessage = '';
 
  if (!this.email?.trim()) {
- this.errorMessage = 'Please enter your email';
- return;
- }
-
- if (!this.password?.trim()) {
- this.errorMessage = 'Please enter your password';
+ this.errorMessage = 'Enter the correct mail id first, then enter your password';
  return;
  }
 
  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  if (!emailRegex.test(this.email)) {
- this.errorMessage = 'Please enter a valid email address';
+ this.errorMessage = 'Enter the correct mail id first, then enter your password';
+ return;
+ }
+
+ if (!this.password?.trim()) {
+ this.errorMessage = 'Please enter your password';
  return;
  }
 
@@ -106,6 +106,12 @@ export class LoginComponent {
 
  if (!this.forgotEmail?.trim()) {
  this.errorMessage = 'Please enter your email';
+ return;
+ }
+
+ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+ if (!emailRegex.test(this.forgotEmail)) {
+ this.errorMessage = 'Please enter a valid email address';
  return;
  }
 

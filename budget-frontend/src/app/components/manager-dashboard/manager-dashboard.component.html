@@ -160,8 +160,13 @@
  </tr>
  </thead>
  <tbody>
- <tr *ngFor="let e of filteredExpenses">
- <td>{{ e.title }}</td>
+ <tr *ngFor="let e of filteredExpenses" [class.exceeds-budget-row]="e.exceedsBudget && e.status === 'Pending'">
+ <td>
+ <span>{{ e.title }}</span>
+ <div *ngIf="e.exceedsBudget && e.status === 'Pending'" class="budget-warning">
+ ⚠ Amount ({{ e.amount | currency }}) exceeds remaining budget ({{ (e.remainingBudget ?? 0) | currency }})
+ </div>
+ </td>
  <td>{{ e.amount | currency }}</td>
  <td>{{ e.employeeName || '-' }}</td>
  <td>

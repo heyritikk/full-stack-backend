@@ -30,6 +30,16 @@ export class AdminDashboardComponent implements OnInit {
  budgetError = '';
  summaryError = '';
  selectedDepartmentFilter = 'All';
+ selectedDateFilter = 'all';
+
+ dateFilterOptions: { value: string; label: string }[] = [
+ { value: 'all', label: 'All time' },
+ { value: '7d', label: 'Last 7 days' },
+ { value: '30d', label: 'Last 30 days' },
+ { value: '90d', label: 'Last 90 days' },
+ { value: 'thisMonth', label: 'This month' },
+ { value: 'lastMonth', label: 'Last month' }
+ ];
 
  loggedInEmail: string | null = null;
 
@@ -61,6 +71,50 @@ export class AdminDashboardComponent implements OnInit {
  onDepartmentFilterChange(event: Event) {
  const target = event.target as HTMLSelectElement | null;
  this.selectedDepartmentFilter = target?.value || 'All';
+ }
+
+ onDateFilterChange(event: Event) {
+ const target = event.target as HTMLSelectElement | null;
+ this.selectedDateFilter = target?.value || 'all';
+ this.loadReports();
+ }
+
+ private getDateRange(): { startDate?: string; endDate?: string } {
+ const now = new Date();
+ const end = new Date(now);
+ end.setHours(23, 59, 59, 999);
+
+ switch (this.selectedDateFilter) {
+ case '7d': {
+ const start = new Date(now);
+ start.setDate(start.getDate() - 7);
+ start.setHours(0, 0, 0, 0);
+ return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
+ }
+ case '30d': {
+ const start = new Date(now);
+ start.setDate(start.getDate() - 30);
+ start.setHours(0, 0, 0, 0);
+ return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
+ }
+ case '90d': {
+ const start = new Date(now);
+ start.setDate(start.getDate() - 90);
+ start.setHours(0, 0, 0, 0);
+ return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
+ }
+ case 'thisMonth': {
+ const start = new Date(now.getFullYear(), now.getMonth(), 1);
+ return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
+ }
+ case 'lastMonth': {
+ const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+ const lastEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+ return { startDate: start.toISOString().split('T')[0], endDate: lastEnd.toISOString().split('T')[0] };
+ }
+ default:
+ return {};
+ }
  }
 
  get availableDepartments(): string[] {
@@ -190,7 +244,8 @@ export class AdminDashboardComponent implements OnInit {
  private loadDepartmentReport() {
  this.isLoadingDepartment = true;
  this.departmentError = '';
- this.reportService.getDepartmentReport().subscribe({
+ const params = this.getDateRange();
+ this.reportService.getDepartmentReport(params).subscribe({
  next: (data) => {
  this.departmentReport = data || [];
  this.isLoadingDepartment = false;
@@ -205,7 +260,8 @@ export class AdminDashboardComponent implements OnInit {
  private loadBudgetReport() {
  this.isLoadingBudget = true;
  this.budgetError = '';
- this.reportService.getBudgetReport().subscribe({
+ const params = this.getDateRange();
+ this.reportService.getBudgetReport(params).subscribe({
  next: (data) => {
  this.budgetReport = data || [];
  this.isLoadingBudget = false;
@@ -220,7 +276,8 @@ export class AdminDashboardComponent implements OnInit {
  private loadSummaryReport() {
  this.isLoadingSummary = true;
  this.summaryError = '';
- this.reportService.getSummaryReport().subscribe({
+ const params = this.getDateRange();
+ this.reportService.getSummaryReport(params).subscribe({
  next: (data) => {
  this.summaryReport = data || [];
  this.isLoadingSummary = false;

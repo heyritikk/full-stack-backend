@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -20,24 +20,36 @@ export class ReportService {
  });
  }
 
- getDepartmentReport(): Observable<any[]> {
- return this.http.get<any[]>(`${this.baseUrl}/report/department`, {
+ getDepartmentReport(params?: { startDate?: string; endDate?: string }): Observable<any[]> {
+ const searchParams = new URLSearchParams();
+ if (params?.startDate) searchParams.set('startDate', params.startDate);
+ if (params?.endDate) searchParams.set('endDate', params.endDate);
+ const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+ return this.http.get<any[]>(`${this.baseUrl}/report/department${query}`, {
  headers: this.getAuthHeaders()
  }).pipe(
  catchError(err => throwError(() => err))
  );
  }
 
- getBudgetReport(): Observable<any[]> {
- return this.http.get<any[]>(`${this.baseUrl}/report/budget`, {
+ getBudgetReport(params?: { startDate?: string; endDate?: string }): Observable<any[]> {
+ const searchParams = new URLSearchParams();
+ if (params?.startDate) searchParams.set('startDate', params.startDate);
+ if (params?.endDate) searchParams.set('endDate', params.endDate);
+ const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+ return this.http.get<any[]>(`${this.baseUrl}/report/budget${query}`, {
  headers: this.getAuthHeaders()
  }).pipe(
  catchError(err => throwError(() => err))
  );
  }
 
- getSummaryReport(): Observable<any[]> {
- return this.http.get<any[]>(`${this.baseUrl}/report/summary`, {
+ getSummaryReport(params?: { startDate?: string; endDate?: string }): Observable<any[]> {
+ const searchParams = new URLSearchParams();
+ if (params?.startDate) searchParams.set('startDate', params.startDate);
+ if (params?.endDate) searchParams.set('endDate', params.endDate);
+ const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+ return this.http.get<any[]>(`${this.baseUrl}/report/summary${query}`, {
  headers: this.getAuthHeaders()
  }).pipe(
  catchError(err => throwError(() => err))

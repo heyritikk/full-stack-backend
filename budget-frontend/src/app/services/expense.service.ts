@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -13,6 +13,10 @@ export interface Expense {
  managerEmail?: string;
  managerId?: string | number;
  status: 'Pending' | 'Approved' | 'Rejected' | string;
+ /** True when expense amount exceeds remaining budget (for manager warning) */
+ exceedsBudget?: boolean;
+ /** Remaining budget for this expense's budget (for manager UI) */
+ remainingBudget?: number;
 }
 
 @Injectable({
