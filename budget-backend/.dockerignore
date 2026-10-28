@@ -1,0 +1,12 @@
+bin/
+obj/
+*.log
+*.user
+.git
+.vs/
+Dockerfile
+.dockerignore
+
+# Secrets image mein nahi jaane chahiye; runtime pe env vars se do
+appsettings.json
+appsettings.*.json
