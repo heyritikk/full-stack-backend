@@ -1,0 +1,10 @@
+bin/
+obj/
+node_modules/
+dist/
+.angular/
+.vs/
+*.user
+appsettings.Development.json
+temp_bin/
+temp_build/
