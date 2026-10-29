@@ -22,6 +22,13 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 
+// No fallback on purpose: the key must come from env var Security__SecretKey or user secrets.
+var jwtSecretKey = builder.Configuration["Security:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtSecretKey) || jwtSecretKey.Length < 32)
+{
+ throw new InvalidOperationException("Security:SecretKey is missing or shorter than 32 characters. Set env var Security__SecretKey.");
+}
+
 builder.Services.AddAuthentication(options =>
 {
  options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -38,7 +45,7 @@ builder.Services.AddAuthentication(options =>
  NameClaimType = ClaimTypes.Name,
  RoleClaimType = ClaimTypes.Role,
  IssuerSigningKey = new SymmetricSecurityKey(
- Encoding.UTF8.GetBytes(builder.Configuration["Security:SecretKey"] ?? "KJH@98sdF#23!dkL09@#Lksj$%23Fsd!@#")
+ Encoding.UTF8.GetBytes(jwtSecretKey)
  )
  };
 });
