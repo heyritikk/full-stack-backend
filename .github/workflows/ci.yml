@@ -36,5 +36,10 @@ jobs:
         run: dotnet restore InternalBudgetTracker.csproj
       - name: Build
         run: dotnet build InternalBudgetTracker.csproj -c Release --no-restore
-      - name: Vulnerable packages (SCA, report only for now)
-        run: dotnet list InternalBudgetTracker.csproj package --vulnerable --include-transitive
+      - name: Vulnerable packages (SCA gate)
+        run: |
+          dotnet list InternalBudgetTracker.csproj package --vulnerable --include-transitive | tee sca.txt
+          if grep -q "has the following vulnerable packages" sca.txt; then
+            echo "Vulnerable packages found, failing the build."
+            exit 1
+          fi
