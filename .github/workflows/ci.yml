@@ -43,3 +43,20 @@ jobs:
             echo "Vulnerable packages found, failing the build."
             exit 1
           fi
+
+  frontend:
+    name: Frontend dependency audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: budget-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: npm ci
+      - name: Audit (report only, Angular 17 upgrade pending)
+        run: npm audit --audit-level=high
+        continue-on-error: true
