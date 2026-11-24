@@ -1,0 +1,103 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - sit
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+
+  # ── STAGE 1: Backend Build ──────────────────────────────
+  - stage: Build_Backend
+    displayName: 'Build .NET Backend'
+    jobs:
+      - job: Build
+        steps:
+
+          - checkout: self
+            displayName: 'Code download karo'
+
+          - task: UseDotNet@2
+            displayName: '.NET 10 install karo'
+            inputs:
+              version: '10.0.x'
+
+          - script: dotnet restore InternalBudgetTracker.csproj
+            workingDirectory: budget-backend
+            displayName: 'NuGet packages restore karo'
+
+          - script: dotnet build InternalBudgetTracker.csproj -c Release --no-restore
+            workingDirectory: budget-backend
+            displayName: 'Backend build karo'
+
+  # ── STAGE 2: Frontend Build ─────────────────────────────
+  - stage: Build_Frontend
+    displayName: 'Build Angular Frontend'
+    dependsOn: Build_Backend
+    jobs:
+      - job: Build
+        steps:
+
+          - checkout: self
+            displayName: 'Code download karo'
+
+          - task: NodeTool@0
+            displayName: 'Node.js install karo'
+            inputs:
+              versionSpec: '22.x'
+
+          - script: npm ci
+            workingDirectory: budget-frontend
+            displayName: 'npm packages install karo'
+
+          - script: npm run build -- --configuration development
+            workingDirectory: budget-frontend
+            displayName: 'Angular build karo'
+
+  # ── STAGE 3: Trivy — Docker Image Scan ──────────────────
+  - stage: Trivy_Scan
+    displayName: 'Trivy — Docker Image Scan'
+    dependsOn: Build_Frontend
+    jobs:
+      - job: Scan
+        steps:
+
+          - checkout: self
+            displayName: 'Code download karo'
+
+          - script: |
+              echo "=== Root folder ==="
+              ls $(Build.SourcesDirectory)
+              echo "=== budget-backend folder ==="
+              ls $(Build.SourcesDirectory)/budget-backend
+              echo "=== budget-frontend folder ==="
+              ls $(Build.SourcesDirectory)/budget-frontend
+            displayName: 'Debug: files check karo'
+
+          - script: |
+              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+            displayName: 'Trivy install karo'
+
+          - script: docker build -t budget-backend:scan -f $(Build.SourcesDirectory)/budget-backend/Dockerfile $(Build.SourcesDirectory)/budget-backend
+            displayName: 'Backend image banao'
+
+          - script: |
+              trivy image \
+                --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                --format table \
+                budget-backend:scan
+            displayName: 'Backend image scan karo'
+
+          - script: docker build -t budget-frontend:scan -f $(Build.SourcesDirectory)/budget-frontend/Dockerfile $(Build.SourcesDirectory)/budget-frontend
+            displayName: 'Frontend image banao'
+
+          - script: |
+              trivy image \
+                --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                --format table \
+                budget-frontend:scan
+            displayName: 'Frontend image scan karo'
