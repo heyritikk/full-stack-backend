@@ -68,6 +68,15 @@ stages:
             displayName: 'Code download karo'
 
           - script: |
+              echo "=== Root folder ==="
+              ls $(Build.SourcesDirectory)
+              echo "=== budget-backend folder ==="
+              ls $(Build.SourcesDirectory)/budget-backend
+              echo "=== budget-frontend folder ==="
+              ls $(Build.SourcesDirectory)/budget-frontend
+            displayName: 'Debug: files check karo'
+
+          - script: |
               curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
             displayName: 'Trivy install karo'
 
