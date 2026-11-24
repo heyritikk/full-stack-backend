@@ -52,6 +52,6 @@ stages:
             workingDirectory: budget-frontend
             displayName: 'npm packages install karo'
 
-          - script: npm run build -- --configuration production
+          - script: npm run build -- --configuration development
             workingDirectory: budget-frontend
             displayName: 'Angular build karo'
