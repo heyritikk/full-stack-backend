@@ -1,0 +1,57 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - sit
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+
+  # ── STAGE 1: Backend Build ──────────────────────────────
+  - stage: Build_Backend
+    displayName: 'Build .NET Backend'
+    jobs:
+      - job: Build
+        steps:
+
+          - checkout: self
+            displayName: 'Code download karo'
+
+          - task: UseDotNet@2
+            displayName: '.NET 10 install karo'
+            inputs:
+              version: '10.0.x'
+
+          - script: dotnet restore InternalBudgetTracker.csproj
+            workingDirectory: budget-backend
+            displayName: 'NuGet packages restore karo'
+
+          - script: dotnet build InternalBudgetTracker.csproj -c Release --no-restore
+            workingDirectory: budget-backend
+            displayName: 'Backend build karo'
+
+  # ── STAGE 2: Frontend Build ─────────────────────────────
+  - stage: Build_Frontend
+    displayName: 'Build Angular Frontend'
+    dependsOn: Build_Backend
+    jobs:
+      - job: Build
+        steps:
+
+          - checkout: self
+            displayName: 'Code download karo'
+
+          - task: NodeTool@0
+            displayName: 'Node.js install karo'
+            inputs:
+              versionSpec: '22.x'
+
+          - script: npm ci
+            workingDirectory: budget-frontend
+            displayName: 'npm packages install karo'
+
+          - script: npm run build -- --configuration production
+            workingDirectory: budget-frontend
+            displayName: 'Angular build karo'
