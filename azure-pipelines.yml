@@ -68,8 +68,12 @@ stages:
             displayName: 'Code download karo'
 
           # Backend ki Docker image banao (sirf scan ke liye)
-          - script: docker build -t budget-backend:scan ./budget-backend
-            displayName: 'Backend image banao'
+
+        - script: docker build -t budget-backend:scan -f $(Build.SourcesDirectory)/budget-backend/Dockerfile $(Build.SourcesDirectory)/budget-backend
+        displayName: 'Backend image banao'
+
+        - script: docker build -t budget-frontend:scan -f $(Build.SourcesDirectory)/budget-frontend/Dockerfile $(Build.SourcesDirectory)/budget-frontend
+        displayName: 'Frontend image banao'
 
           # Trivy install karo pipeline server pe
           - script: |
