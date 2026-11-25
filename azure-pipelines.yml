@@ -17,12 +17,22 @@ stages:
         steps:
 
           - checkout: self
+            fetchDepth: 0
             displayName: 'Code download karo'
 
           - task: UseDotNet@2
             displayName: '.NET 10 install karo'
             inputs:
               version: '10.0.x'
+
+          - task: SonarCloudPrepare@2
+            displayName: 'SonarCloud scan prepare karo'
+            inputs:
+              SonarCloud: 'SonarCloud'
+              organization: 'heyritikk'
+              scannerMode: 'dotnet'
+              projectKey: 'heyritikk_full-stack-backend'
+              projectName: 'full-stack-backend'
 
           - script: dotnet restore InternalBudgetTracker.csproj
             workingDirectory: budget-backend
@@ -31,6 +41,14 @@ stages:
           - script: dotnet build InternalBudgetTracker.csproj -c Release --no-restore
             workingDirectory: budget-backend
             displayName: 'Backend build karo'
+
+          - task: SonarCloudAnalyze@2
+            displayName: 'SonarCloud SAST scan chalao'
+
+          - task: SonarCloudPublish@2
+            displayName: 'SonarCloud result publish karo'
+            inputs:
+              pollingTimeoutSec: '300'
 
   # ── STAGE 2: Frontend Build ─────────────────────────────
   - stage: Build_Frontend
