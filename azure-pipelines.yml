@@ -28,7 +28,7 @@ stages:
           - task: SonarCloudPrepare@4
             displayName: 'SonarCloud scan prepare karo'
             inputs:
-              SonarCloud: 'SonarCloud'
+              SonarCloud: 'SonarQube'
               organization: 'heyritikk'
               scannerMode: 'dotnet'
               projectKey: 'heyritikk_full-stack-backend'
