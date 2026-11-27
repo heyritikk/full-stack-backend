@@ -112,3 +112,21 @@ stages:
                 --format table \
                 budget-frontend:scan
             displayName: 'Frontend image scan karo'
+
+  # ── STAGE 4: Checkov — IaC Security Scan ────────────────
+  - stage: Checkov_IaC_Scan
+    displayName: 'Checkov — Terraform Security Scan'
+    dependsOn: Build_Backend
+    jobs:
+      - job: IaC_Scan
+        steps:
+
+          - checkout: self
+            displayName: 'Code download karo'
+
+          - script: |
+              docker run --rm \
+                -v $(Build.SourcesDirectory)/infra:/tf \
+                bridgecrew/checkov:latest \
+                -d /tf --compact
+            displayName: 'Checkov se Terraform scan karo'

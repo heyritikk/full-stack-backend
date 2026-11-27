@@ -10,3 +10,7 @@ temp_bin/
 temp_build/
 .env
 !.env.example
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
