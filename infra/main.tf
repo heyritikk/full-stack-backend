@@ -50,6 +50,8 @@ resource "azurerm_log_analytics_workspace" "main" {
 
 # 4. Azure Key Vault — secrets store (RBAC + Purge Protection + Network ACLs)
 resource "azurerm_key_vault" "main" {
+  #checkov:skip=CKV_AZURE_189:Public access kept for SIT free tier; network_acls default_action=Deny + AzureServices bypass enforced
+  #checkov:skip=CKV2_AZURE_32:Private endpoint skipped in SIT free tier to keep cost zero; enabled in prod
   name                        = "kv-budget-${var.environment}-rk"
   location                    = azurerm_resource_group.main.location
   resource_group_name         = azurerm_resource_group.main.name
