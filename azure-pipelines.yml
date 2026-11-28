@@ -185,9 +185,16 @@ stages:
                     azureSubscription: 'azure-connections'
                     scriptType: 'bash'
                     scriptLocation: 'inlineScript'
+                    addSpnToEnvironment: true
                     workingDirectory: '$(Build.SourcesDirectory)/infra'
                     inlineScript: |
                       set -e
+                      export ARM_CLIENT_ID="$servicePrincipalId"
+                      export ARM_OIDC_TOKEN="$idToken"
+                      export ARM_TENANT_ID="$tenantId"
+                      export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                      export ARM_USE_OIDC=true
+
                       az provider register --namespace Microsoft.Storage --wait
                       az provider register --namespace Microsoft.KeyVault --wait
                       az provider register --namespace Microsoft.OperationalInsights --wait
