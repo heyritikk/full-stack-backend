@@ -1,0 +1,91 @@
+# CD Pipeline for SIT Environment (Manual Trigger)
+# Build Once, Promote Everywhere: uses verified images from ghcr.io without rebuilding
+
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+
+  # ── STAGE 1: Deploy to Azure SIT (Terraform + OIDC) ──────
+  - stage: Deploy_SIT
+    displayName: 'Deploy to Azure SIT'
+    jobs:
+      - deployment: Deploy_SIT_Infra
+        environment: 'SIT'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+
+                - checkout: self
+                  displayName: 'Code download karo'
+
+                - task: AzureCLI@2
+                  name: TerraformApply
+                  displayName: 'Terraform Apply (SIT)'
+                  inputs:
+                    azureSubscription: 'azure-connections'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    addSpnToEnvironment: true
+                    workingDirectory: '$(Build.SourcesDirectory)/infra'
+                    inlineScript: |
+                      set -e
+                      export ARM_CLIENT_ID="$servicePrincipalId"
+                      export ARM_OIDC_TOKEN="$idToken"
+                      export ARM_TENANT_ID="$tenantId"
+                      export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                      export ARM_USE_OIDC=true
+
+                      curl -sL "https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip" -o /tmp/terraform.zip
+                      mkdir -p "$HOME/.local/bin"
+                      unzip -qo /tmp/terraform.zip -d "$HOME/.local/bin"
+                      export PATH="$HOME/.local/bin:$PATH"
+                      rm -f /tmp/terraform.zip
+
+                      terraform init \
+                        -backend-config="resource_group_name=rg-terraform-state" \
+                        -backend-config="storage_account_name=ritiktfstate2026" \
+                        -backend-config="container_name=tfstate" \
+                        -backend-config="key=sit.terraform.tfstate"
+
+                      terraform apply -auto-approve \
+                        -var="environment=sit" \
+                        -var="resource_group_name=rg-budget-sit" \
+                        -var="backend_image=ghcr.io/heyritikk/budget-backend:latest" \
+                        -var="frontend_image=ghcr.io/heyritikk/budget-frontend:latest"
+
+                      WEB_URL=$(terraform output -raw web_url)
+                      API_URL=$(terraform output -raw api_url)
+                      echo "SIT Web URL: $WEB_URL"
+                      echo "SIT API URL: $API_URL"
+                      echo "##vso[task.setvariable variable=webUrl;isOutput=true]$WEB_URL"
+                      echo "##vso[task.setvariable variable=apiUrl;isOutput=true]$API_URL"
+
+  # ── STAGE 2: DAST — OWASP ZAP Baseline Scan ─────────────
+  - stage: DAST_OWASP_ZAP
+    displayName: 'OWASP ZAP (DAST Security Scan)'
+    dependsOn: Deploy_SIT
+    variables:
+      webUrl: $[ stageDependencies.Deploy_SIT.Deploy_SIT_Infra.outputs['Deploy_SIT_Infra.TerraformApply.webUrl'] ]
+    jobs:
+      - job: ZAP_Scan
+        steps:
+
+          - script: |
+              echo "Scanning live SIT URL: $(webUrl)"
+              mkdir -p $(Build.ArtifactStagingDirectory)/zap
+              chmod 777 $(Build.ArtifactStagingDirectory)/zap
+              docker run --rm \
+                -v $(Build.ArtifactStagingDirectory)/zap:/zap/wrk:rw \
+                ghcr.io/zaproxy/zaproxy:stable \
+                zap-baseline.py -t "$(webUrl)" -r zap-report.html -I
+            displayName: 'OWASP ZAP se live SIT scan karo'
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'ZAP HTML Report upload karo'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/zap'
+              ArtifactName: 'owasp-zap-dast-report'

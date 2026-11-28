@@ -2,7 +2,6 @@ trigger:
   branches:
     include:
       - develop
-      - sit
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -137,7 +136,7 @@ stages:
     dependsOn:
       - Trivy_Scan
       - Checkov_IaC_Scan
-    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), eq(variables['Build.SourceBranch'], 'refs/heads/sit')))
+    condition: succeeded()
     variables:
       - group: secrets
     jobs:
@@ -162,66 +161,3 @@ stages:
               docker push ghcr.io/heyritikk/budget-frontend:$(Build.BuildId)
               docker push ghcr.io/heyritikk/budget-frontend:latest
             displayName: 'Frontend image build & push karo'
-
-  # ── STAGE 6: Deploy SIT Infrastructure & Apps (Terraform) ──
-  - stage: Deploy_SIT
-    displayName: 'Deploy to Azure SIT'
-    dependsOn: Push_Image
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/sit'))
-    jobs:
-      - deployment: Deploy_SIT_Infra
-        environment: 'SIT'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-
-                - checkout: self
-                  displayName: 'Code download karo'
-
-                - task: AzureCLI@2
-                  displayName: 'Terraform Init, Plan & Apply (SIT)'
-                  inputs:
-                    azureSubscription: 'azure-connections'
-                    scriptType: 'bash'
-                    scriptLocation: 'inlineScript'
-                    addSpnToEnvironment: true
-                    workingDirectory: '$(Build.SourcesDirectory)/infra'
-                    inlineScript: |
-                      set -e
-                      export ARM_CLIENT_ID="$servicePrincipalId"
-                      export ARM_OIDC_TOKEN="$idToken"
-                      export ARM_TENANT_ID="$tenantId"
-                      export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-                      export ARM_USE_OIDC=true
-
-                      az provider register --namespace Microsoft.Storage --wait
-                      az provider register --namespace Microsoft.KeyVault --wait
-                      az provider register --namespace Microsoft.OperationalInsights --wait
-                      az provider register --namespace Microsoft.App --wait
-
-                      az group create -n rg-terraform-state -l eastus
-                      az storage account create -n ritiktfstate2026 -g rg-terraform-state -l eastus --sku Standard_LRS --allow-blob-public-access false
-                      az storage container create -n tfstate --account-name ritiktfstate2026
-
-                      curl -sL "https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip" -o /tmp/terraform.zip
-                      mkdir -p "$HOME/.local/bin"
-                      unzip -qo /tmp/terraform.zip -d "$HOME/.local/bin"
-                      export PATH="$HOME/.local/bin:$PATH"
-                      rm -f /tmp/terraform.zip
-                      terraform -version
-
-                      terraform init \
-                        -backend-config="resource_group_name=rg-terraform-state" \
-                        -backend-config="storage_account_name=ritiktfstate2026" \
-                        -backend-config="container_name=tfstate" \
-                        -backend-config="key=sit.terraform.tfstate"
-
-                      terraform apply -auto-approve \
-                        -var="environment=sit" \
-                        -var="resource_group_name=rg-budget-sit" \
-                        -var="backend_image=ghcr.io/heyritikk/budget-backend:$(Build.BuildId)" \
-                        -var="frontend_image=ghcr.io/heyritikk/budget-frontend:$(Build.BuildId)"
-
-                      echo "=== SIT Live URLs ==="
-                      terraform output
