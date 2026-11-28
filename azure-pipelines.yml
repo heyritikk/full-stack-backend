@@ -197,6 +197,13 @@ stages:
                       az storage account create -n ritiktfstate2026 -g rg-terraform-state -l eastus --sku Standard_LRS --allow-blob-public-access false
                       az storage container create -n tfstate --account-name ritiktfstate2026
 
+                      curl -sL "https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip" -o /tmp/terraform.zip
+                      mkdir -p "$HOME/.local/bin"
+                      unzip -qo /tmp/terraform.zip -d "$HOME/.local/bin"
+                      export PATH="$HOME/.local/bin:$PATH"
+                      rm -f /tmp/terraform.zip
+                      terraform -version
+
                       terraform init \
                         -backend-config="resource_group_name=rg-terraform-state" \
                         -backend-config="storage_account_name=ritiktfstate2026" \
