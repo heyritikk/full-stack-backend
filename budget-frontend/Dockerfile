@@ -9,7 +9,7 @@ COPY . .
 RUN npm run build -- --configuration production
 
 # ---------- Stage 2: runtime ----------
-FROM nginxinc/nginx-unprivileged:1.27-alpine AS final
+FROM nginxinc/nginx-unprivileged:alpine-slim AS final
 
 # Root pe switch karo — sirf update ke liye
 USER root
