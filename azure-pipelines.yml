@@ -188,6 +188,11 @@ stages:
                     workingDirectory: '$(Build.SourcesDirectory)/infra'
                     inlineScript: |
                       set -e
+                      az provider register --namespace Microsoft.Storage --wait
+                      az provider register --namespace Microsoft.KeyVault --wait
+                      az provider register --namespace Microsoft.OperationalInsights --wait
+                      az provider register --namespace Microsoft.App --wait
+
                       az group create -n rg-terraform-state -l eastus
                       az storage account create -n ritiktfstate2026 -g rg-terraform-state -l eastus --sku Standard_LRS --allow-blob-public-access false
                       az storage container create -n tfstate --account-name ritiktfstate2026
